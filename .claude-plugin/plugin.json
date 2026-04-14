@@ -1,0 +1,10 @@
+{
+  "name": "data-etl-orchestrator",
+  "description": "Deterministic ETL orchestrator for YouTube, X, crawler, and local-file data sources into the agent-knowledgebase. Skills-only — agents never read or write payload bytes.",
+  "version": "0.1.0",
+  "author": {
+    "name": "olive"
+  },
+  "repository": "https://github.com/goosefly99/data-etl-orchestrator-claude-plugin.git",
+  "type": "plugin"
+}
