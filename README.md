@@ -27,12 +27,15 @@ Shared references live in `skills/references/`.
 
 ## Install
 
-Install via the `goosefly99-plugins-auto-dev` marketplace. Requires these sibling plugins to be installed and loaded first:
+Install via the `goosefly99-plugins-auto-dev` marketplace in this order:
 
-- `agent-knowledgebase-auto-dev` (the ingest target)
-- `youtube-mcp-auto-dev` (for YouTube sources)
-- `x-api-mcp-auto-dev` (for X sources)
-- `crawler-mcp-auto-dev` (for standalone web sources; optional if you never ingest web pages)
+1. **`agent-knowledgebase-auto-dev`** — the ingest target. Verify: `kb_list` returns without error.
+2. **`youtube-mcp-auto-dev`** — YouTube data source. Verify: `get_video_details(videoId='dQw4w9WgXcQ')` returns a `statuses` envelope.
+3. **`x-api-mcp-auto-dev`** — X/Twitter data source. Verify: `x_get_tweet(tweet_id='<public tweet>')` returns an `articles` array.
+4. **`data-etl-orchestrator`** (this plugin) — install last.
+5. _(Optional)_ **`crawler-mcp-auto-dev`** — for standalone web sources.
+
+The ETL orchestrator runs a contract probe on first use to verify all sibling plugins are at compatible versions. See `skills/references/contract-probe-protocol.md`.
 
 ## When to invoke
 
@@ -40,4 +43,4 @@ Ask for `/etl-overview` any time you want to pull data from one of the supported
 
 ## Design note
 
-Pure skills, no MCP server of its own. That keeps the "agents never touch data" constraint honest — the plugin physically cannot expose a tool that would let an agent read or write payload bytes.
+**No MCP tool surface.** This plugin exposes no MCP server and no tools. The "agents never touch data" constraint is physically enforced — the plugin cannot offer a tool that would let an agent read or write payload bytes. All data movement is MCP-tool-to-MCP-tool via the sibling source MCPs and the agent-knowledgebase.
