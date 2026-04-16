@@ -65,26 +65,55 @@ Log dedup hit counts per table before starting batch construction.
 
 Split the filtered row IDs for each table into chunks of at most `batch_size` (default 50).
 
-For each chunk, issue one sequential `kb_ingest_batch` call:
+For each chunk, issue one sequential `kb_ingest_batch` call using one of the 3 canned `row_selector` patterns below.
 
-```
-kb_ingest_batch([
-  {
-    source_type: "sql_database",
-    uri: "sqlite:///<db_path>",
-    metadata: {
-      table: "<table_name>",
-      where: "<narrowed SQL fragment, e.g. id IN ('a','b','c')>",
-      granularity: "<row|batch>",
-      kb_source_label: "<caller_skill>:<scope_identifier>"
-    }
+**Pattern 1 — By ID list (most common):**
+```json
+{
+  "source_type": "sql_database",
+  "uri": "sqlite:///<db_path>",
+  "metadata": {
+    "table": "videos",
+    "row_selector": "video_id IN ('abc123', 'def456', 'ghi789')",
+    "granularity": "<row|batch>",
+    "kb_source_label": "<caller_skill>:<scope_identifier>"
   }
-])
+}
 ```
+
+**Pattern 2 — By date range:**
+```json
+{
+  "source_type": "sql_database",
+  "uri": "sqlite:///<db_path>",
+  "metadata": {
+    "table": "tweets",
+    "row_selector": "saved_at >= '2026-01-01' AND saved_at < '2026-02-01'",
+    "granularity": "<row|batch>",
+    "kb_source_label": "<caller_skill>:<scope_identifier>"
+  }
+}
+```
+
+**Pattern 3 — By author:**
+```json
+{
+  "source_type": "sql_database",
+  "uri": "sqlite:///<db_path>",
+  "metadata": {
+    "table": "tweets",
+    "row_selector": "author_id = '12345'",
+    "granularity": "<row|batch>",
+    "kb_source_label": "<caller_skill>:<scope_identifier>"
+  }
+}
+```
+
+> **No free-form filters.** Do not construct arbitrary WHERE clauses from user input. Use only the 3 canned patterns above until `docs/safe-where-clause-grammar.md` ships with an AST-validated grammar. Free-form filters risk SQL injection via the `row_selector` field.
 
 - All calls are **sequential**. Do not parallelize — serialization avoids MCP contention.
 - Process all chunks for table 1 before moving to table 2.
-- Narrow the `where` clause to only the IDs in the current chunk; do not pass unbounded queries.
+- Narrow the `row_selector` to only the IDs in the current chunk; do not pass unbounded queries.
 
 ---
 
@@ -135,7 +164,7 @@ Final report must include:
 ## Do not do these things
 
 - Do NOT use `source_type="file"` here. This skill is exclusively for `source_type="sql_database"`.
-- Do NOT issue unbounded SQL queries — always narrow `where` to the current chunk's IDs.
+- Do NOT issue unbounded SQL queries — always narrow `row_selector` to the current chunk's IDs.
 - Do NOT run `kb_ingest_batch` calls in parallel.
 - Do NOT echo row content in logs or reports.
 - Do NOT skip the KB resolution step — stale memory pointers cause silent double-ingestion.

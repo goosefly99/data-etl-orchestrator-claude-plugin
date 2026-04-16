@@ -113,6 +113,8 @@ All five return full tweet metadata and text body, and write a `tweets` row with
 - `kb_ingest(kb_id, source_type, uri, metadata)` — ingest a single source.
 - `kb_ingest_batch(kb_id, sources)` — ingest an array of `{ source_type, uri, metadata }` objects. Processing is sequential server-side. Recommended batch size: ≤50 sources per call. All `kb_ingest_batch` calls for a given `kb_id` are serialized server-side. Concurrent calls targeting the same KB will queue. Batch size hard-reject threshold: 50 rows per call.
 
+  The `row_selector` field accepts a WHERE clause fragment. Until `docs/safe-where-clause-grammar.md` ships with an AST validator, only canned patterns are permitted — see `skills/load-kb-from-sql/SKILL.md` for the 3 allowed patterns.
+
 ### Verification and dedup
 
 - `kb_list_pages(kb_id, page_type)` — list KB pages; includes per-page metadata (used to check dedup keys).
