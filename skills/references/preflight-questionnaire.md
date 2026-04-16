@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Stage 0 is a mandatory gate. No MCP data tool may be called until all six questions are resolved and the user has given an explicit go-ahead. This prevents partial-state writes (e.g., rows inserted to a source DB but no corresponding KB ingest), makes the operation plan reviewable, and ensures dedup, granularity, and KB-target decisions are locked before any data moves. Every skill in this plugin points here for the canonical question spec.
+Stage 0 is a mandatory gate. No MCP data tool may be called until all seven questions are resolved and the user has given an explicit go-ahead. This prevents partial-state writes (e.g., rows inserted to a source DB but no corresponding KB ingest), makes the operation plan reviewable, and ensures dedup, granularity, and KB-target decisions are locked before any data moves. Every skill in this plugin points here for the canonical question spec.
 
 ---
 
@@ -83,7 +83,16 @@ Options:
 
 ---
 
-## Question 6: Confirmation (go-ahead gate)
+## Question 6: Embeddings model
+
+"Which embeddings model endpoint should be used for the KB records, if the default ollama embeddings model is not available?"
+
+- If the default ollama embeddings model is available and the user has no preference, accept the default.
+- If the user specifies an alternative endpoint, record it for use in Stage 3 ingest calls.
+
+---
+
+## Question 7: Confirmation (go-ahead gate)
 
 Echo the resolved plan as a single block before asking for approval. Include:
 
@@ -92,6 +101,7 @@ Echo the resolved plan as a single block before asking for approval. Include:
 - DB path(s): resolved absolute path(s)
 - Ingest granularity: per-item / per-batch
 - Dedup policy: skip / re-ingest / force-add
+- Embeddings model: default ollama / `<override endpoint>`
 
 Ask: "Proceed with this plan? (yes / no / edit)"
 
@@ -101,4 +111,4 @@ Do not invoke any Stage 1 tool until the user replies "yes".
 
 ## Implementation note
 
-Issue Questions 1–5 via `AskUserQuestion` calls. The tool supports up to 4 questions per call; group related sub-questions together to minimize round-trips. Question 6 is a final single-select confirmation using a preview of the resolved plan text. Never skip Question 6 even if Questions 1–5 seemed unambiguous.
+Issue Questions 1–6 via `AskUserQuestion` calls. The tool supports up to 4 questions per call; group related sub-questions together to minimize round-trips. Question 7 is a final single-select confirmation using a preview of the resolved plan text. Never skip Question 7 even if Questions 1–6 seemed unambiguous.

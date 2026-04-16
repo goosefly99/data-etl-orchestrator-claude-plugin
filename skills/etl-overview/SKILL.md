@@ -28,7 +28,8 @@ Issue ALL questions via `AskUserQuestion` before touching any data tool. Do not 
    - X API MCP default: `~/.x-api-mcp/x-data.db` (env: `X_API_DB_PATH`)
 4. **KB ingest granularity** — One KB source per item (video/tweet) or one per batch?
 5. **Dedup policy** — If an item already exists in the KB: skip / re-ingest / force-add?
-6. **Confirmation** — Echo the resolved plan (source, item count estimate, target KB, DB path, granularity, dedup policy). Ask for explicit go-ahead.
+6. **Embeddings model** — Which embeddings model endpoint to use for the KB records if the default ollama embeddings model is not available?
+7. **Confirmation** — Echo the resolved plan (source, item count estimate, target KB, DB path, granularity, dedup policy, embeddings model). Ask for explicit go-ahead.
 
 Block all Stage 1+ operations until the go-ahead is received.
 
@@ -45,8 +46,10 @@ After Stage 0 confirms the source type, dispatch to:
 | YouTube playlist (ID or URL) | `ingest-youtube-playlist` |
 | YouTube video list (IDs / URLs / channel) | `ingest-youtube-videos` |
 | X bookmarks | `ingest-x-bookmarks` |
-| X user tweets | `ingest-x-bookmarks` (with `source=user_tweets` param) |
-| Local files | _(not yet implemented — inform user)_ |
+| X user tweets | `ingest-x-user-tweets` |
+| X thread (tweet URL/ID with thread intent) | `ingest-x-thread` |
+| DB-to-KB standalone ("load DB into KB") | `load-kb-from-sql` |
+| Local files | `ingest-local-files` |
 | Crawled pages | _(not yet implemented — inform user)_ |
 
 ---
