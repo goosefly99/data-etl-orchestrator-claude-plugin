@@ -43,4 +43,4 @@ Ask for `/etl-overview` any time you want to pull data from one of the supported
 
 ## Design note
 
-**No MCP tool surface.** This plugin exposes no MCP server and no tools. The "agents never touch data" constraint is physically enforced — the plugin cannot offer a tool that would let an agent read or write payload bytes. All data movement is MCP-tool-to-MCP-tool via the sibling source MCPs and the agent-knowledgebase.
+**No MCP tool surface.** This plugin exposes no MCP server and no tool endpoints. The "agents never touch data" constraint is physically enforced — the plugin cannot offer a tool that would let an agent read or write payload bytes. All data movement is MCP-tool-to-MCP-tool via the sibling source MCPs and the agent-knowledgebase.
