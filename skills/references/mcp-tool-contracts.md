@@ -42,6 +42,16 @@ These are used in Stage 2 to verify DB state after Stage 1 writes.
 - This is the documented behavior for videos such as `aDWJ6lLemJU`. Partial success is not a failure.
 - `transcript: "unavailable"` means the transcript API call was attempted but returned no data. Same handling as `"missing"`.
 
+### Transcript-status semantics
+
+| Status | Meaning | Retry? |
+|---|---|---|
+| `ok` | Transcript fetched and stored | No |
+| `missing` | Video has no captions | No — permanent |
+| `unavailable` | Transcript API returned no data | Yes — transient |
+| `failed` | Transcript fetch threw an error | Yes — transient |
+| `skipped` | Fetch was intentionally skipped | No |
+
 ---
 
 ## x-api-mcp
@@ -56,14 +66,16 @@ These are used in Stage 2 to verify DB state after Stage 1 writes.
 
 All five return full tweet metadata and text body, and write a `tweets` row with the appropriate `source` value.
 
-**X Article auto-crawl:** When a fetched tweet links an X Article, the server automatically crawls it via its in-process Playwright crawler and inserts an `articles` row with `source="crawl"`, keyed by `tweet_id`. The per-tweet response includes:
+**X Article auto-crawl:** When a fetched tweet links one or more X Articles, the server automatically crawls each via its in-process Playwright crawler and inserts an `articles` row per article with `source="crawl"`, keyed by `tweet_id`. A tweet can link multiple articles, so the per-tweet response includes an array:
 
 ```json
-"article": {
-  "status": "ok" | "missing" | "failed",
-  "url": "...",        // present if status != "missing"
-  "article_id": "..."  // present if status == "ok"
-}
+"articles": [
+  {
+    "status": "ok" | "missing" | "failed",
+    "url": "...",        // present if status != "missing"
+    "article_id": "..."  // present if status == "ok"
+  }
+]
 ```
 
 ### Read-only / manual-override accessors (not in ingest path)
@@ -83,7 +95,7 @@ All five return full tweet metadata and text body, and write a `tweets` row with
 
 ### Failure semantics
 
-- Article auto-crawl failure does **not** fail the parent tweet insert. The `tweets` row is written; the `articles` row is skipped. The per-tweet response records `article.status = "failed"` plus a reason string.
+- Article auto-crawl failure does **not** fail the parent tweet insert. The `tweets` row is written; the `articles` row is skipped. The per-tweet `articles` array records the entry with `status = "failed"` plus a reason string.
 - Log article crawl failures per tweet in the Stage 1 status report. Do not treat them as blocking errors.
 
 ---
@@ -94,12 +106,12 @@ All five return full tweet metadata and text body, and write a `tweets` row with
 
 - `kb_create(name, description)` — create a new KB; returns its `id`.
 - `kb_list()` — list all KBs with id, name, description.
-- `kb_info(kb_id)` — retrieve metadata for a single KB; use to verify pointer accuracy.
+- `kb_info(kb_id)` — retrieve metadata for a single KB; use to verify pointer accuracy. Response includes `dominant_embedding_model` field indicating the embeddings model used for the majority of the KB's indexed pages.
 
 ### Ingest
 
 - `kb_ingest(kb_id, source_type, uri, metadata)` — ingest a single source.
-- `kb_ingest_batch(kb_id, sources)` — ingest an array of `{ source_type, uri, metadata }` objects. Processing is sequential server-side. Recommended batch size: ≤50 sources per call.
+- `kb_ingest_batch(kb_id, sources)` — ingest an array of `{ source_type, uri, metadata }` objects. Processing is sequential server-side. Recommended batch size: ≤50 sources per call. All `kb_ingest_batch` calls for a given `kb_id` are serialized server-side. Concurrent calls targeting the same KB will queue. Batch size hard-reject threshold: 50 rows per call.
 
 ### Verification and dedup
 

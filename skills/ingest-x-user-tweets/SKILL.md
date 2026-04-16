@@ -36,7 +36,7 @@ x_get_user_tweets(user_id=<id>, max_results=<N>, next_token=<token|null>)
 ```
 
 - One call per page. Paginate using `next_token` from the response until the desired count is reached or the feed is exhausted.
-- The server auto-crawls any linked X Article per tweet. Each tweet in the response may include `article: {status, url, article_id}`.
+- The server auto-crawls any linked X Articles per tweet. Each tweet in the response may include `articles: [{status, url, article_id}, ...]`.
 - Do NOT call `x_get_article` or `x_crawl_article` in the ingest path. Article rows are written server-side.
 
 **What counts as a Stage 1 success:** the API call returned a 2xx response and rows were written to the source DB. Partial pages are acceptable.
@@ -53,7 +53,7 @@ x_get_saved_articles()   # filter client-side by tweet_id IN <fetched set>
 ```
 
 - Diff desired tweet IDs vs. saved tweet IDs. Re-fetch any delta with a targeted `x_get_user_tweets` call (narrow date range or explicit IDs if the API supports it).
-- Log article coverage: for each tweet with `article.status == "crawled"`, confirm a matching row in saved articles.
+- Log article coverage: for each tweet with articles entries with `status == "ok"`, confirm a matching row in saved articles.
 
 ---
 
@@ -79,7 +79,7 @@ kb_ingest_batch([
     uri: "sqlite:///<db_path>",
     metadata: {
       table: "tweets",
-      where: "author_id = '<id>' AND id IN ('<id1>','<id2>',...)",
+      row_selector: "author_id = '<id>' AND id IN ('<id1>','<id2>',...)",
       granularity: "<row|batch>",
       kb_source_label: "x_user_tweets:<username>"
     }
@@ -90,7 +90,7 @@ kb_ingest_batch([
 Follow with a separate batch for the `articles` table using the same ID chunks:
 
 ```
-metadata: { table: "articles", where: "tweet_id IN (...)", ... }
+metadata: { table: "articles", row_selector: "tweet_id IN (...)", ... }
 ```
 
 - Calls are sequential, not parallel.
@@ -102,8 +102,8 @@ metadata: { table: "articles", where: "tweet_id IN (...)", ... }
 
 ## Partial success handling
 
-- A tweet with no linked article is not a failure. Log it as `article: none`.
-- A tweet whose article crawl failed (`article.status != "crawled"`) — ingest the tweet row; log the article as `skipped (crawl_failed)`.
+- A tweet with no linked article is not a failure. Log it as `articles: []`.
+- A tweet whose article crawl failed (no `articles` entries with `status == "ok"`) — ingest the tweet row; log the article as `skipped (crawl_failed)`.
 - If a `kb_ingest_batch` call fails, log the chunk IDs and reason. Continue with the next chunk. Do not abort the run.
 
 ---

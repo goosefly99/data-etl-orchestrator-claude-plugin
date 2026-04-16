@@ -20,9 +20,9 @@ x_get_bookmarks(max_results=<n>)
 ```
 
 - The server writes `tweets` rows for every bookmark.
-- For every tweet that links an X Article, the server **auto-crawls** and writes an `articles` row server-side. Each tweet in the response includes `article: {status: ok|missing|failed, url, article_id}`.
+- For every tweet that links one or more X Articles, the server **auto-crawls** and writes an `articles` row server-side per article. Each tweet in the response includes `articles: [{status: ok|missing|failed, url, article_id}, ...]`.
 - Do NOT call `x_get_article` or `x_crawl_article` in the ingest path. Those are cache-read / manual-override accessors only.
-- `article.status=missing` means the tweet has no linked article. `article.status=failed` means the crawl was attempted but failed; the `tweets` row is still written.
+- An empty `articles` array means the tweet has no linked article. Entries in `articles` with `status=failed` mean the crawl was attempted but failed; the `tweets` row is still written.
 - Process the full bookmark window before moving to Stage 2.
 
 ---
@@ -32,7 +32,7 @@ x_get_bookmarks(max_results=<n>)
 1. Call `x_get_saved_tweets(source="bookmarks")` scoped to the same bookmark window (date range or result count).
 2. Call `x_get_saved_articles(source="crawl")` scoped to the article IDs from the Stage 1 response.
 3. Diff row counts against Stage 1 per-tweet statuses.
-4. Log `article.status=missing|failed` as info — do not treat as a blocking failure.
+4. Log entries in the `articles` array with `status=missing` or `status=failed` as info — do not treat as a blocking failure.
 5. If a `tweet_id` is absent from `x_get_saved_tweets`, re-call `x_get_bookmarks` with a narrower window or call `x_get_tweet(id=<tweet_id>)` for the specific miss.
 
 ---
@@ -59,7 +59,7 @@ x_get_bookmarks(max_results=<n>)
    }
    ```
 
-   **Track B — articles** (skip IDs where `article.status != ok`):
+   **Track B — articles** (skip IDs where the `articles` entry `status != ok`):
    ```json
    {
      "source_type": "sql_database",
@@ -86,8 +86,8 @@ x_get_bookmarks(max_results=<n>)
 ## Partial success
 
 - A tweet whose linked article has `status=failed` still has a `tweets` row and is ingested as tweet-only; the `articles` row is skipped.
-- `article.status=missing` (tweet has no article link) is not a failure at all.
-- Log each skipped article in the deliverable under "Partial failures" with `article.status=failed`.
+- An empty `articles` array (tweet has no article link) is not a failure at all.
+- Log each skipped article in the deliverable under "Partial failures" with the `articles` entry `status=failed`.
 
 ---
 

@@ -32,7 +32,7 @@ x_get_thread(tweet_id=<root_id>, max_results=<N>)
 
 - This writes all thread tweets (ancestors + replies) plus auto-crawled article rows to the source DB in one operation.
 - The response includes a `conversation_id` that groups all tweets in this thread.
-- Each tweet may include `article: {status, url, article_id}`. Do NOT call `x_get_article` or `x_crawl_article` separately.
+- Each tweet may include `articles: [{status, url, article_id}, ...]`. Do NOT call `x_get_article` or `x_crawl_article` separately.
 
 **What counts as a Stage 1 success:** the call returned a 2xx response and at least the root tweet was written to the DB.
 
@@ -47,7 +47,7 @@ x_get_saved_articles()   # filter client-side by tweet_id IN <thread tweet set>
 
 - Diff desired tweet IDs (from Stage 1 response) vs. saved tweet IDs.
 - If any tweets are missing from the DB, re-call `x_get_thread` with the same parameters (the operation is idempotent).
-- Log article coverage per tweet: `crawled` / `failed` / `none`.
+- Log article coverage per tweet: `ok` / `failed` / `none`.
 
 ---
 
@@ -73,7 +73,7 @@ kb_ingest_batch([
     uri: "sqlite:///<db_path>",
     metadata: {
       table: "tweets",
-      where: "conversation_id = '<conversation_id>' AND id IN ('<id1>',...)",
+      row_selector: "conversation_id = '<conversation_id>' AND id IN ('<id1>',...)",
       granularity: "<row|batch>",
       kb_source_label: "x_thread:<conversation_id>",
       thread_order: "chronological"
@@ -85,7 +85,7 @@ kb_ingest_batch([
 Follow with a separate batch for the `articles` table:
 
 ```
-metadata: { table: "articles", where: "tweet_id IN (...)", ... }
+metadata: { table: "articles", row_selector: "tweet_id IN (...)", ... }
 ```
 
 - **Ordering:** include `thread_order: "chronological"` in metadata so the KB preserves temporal sequence. This is important for retrieval quality in conversation threads.
