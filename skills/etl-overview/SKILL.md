@@ -82,3 +82,4 @@ Final report must include:
 - `references/preflight-questionnaire.md` — canonical Stage 0 question spec
 - `references/mcp-tool-contracts.md` — authoritative tool signatures and response contracts
 - `references/kb-memory-pointer-protocol.md` — memory pointer update spec
+- `references/contract-probe-protocol.md` — contract probe spec

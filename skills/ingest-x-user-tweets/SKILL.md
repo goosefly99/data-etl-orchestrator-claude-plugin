@@ -143,4 +143,5 @@ Final report must include:
 - `references/mcp-tool-contracts.md` — tool signatures and response contracts
 - `references/kb-memory-pointer-protocol.md` — memory pointer update spec
 - `references/preflight-questionnaire.md` — Stage 0 canonical spec
+- `references/subagent-dispatch-protocol.md` — subagent delegation spec
 - `skills/load-kb-from-sql/SKILL.md` — reusable Stage 3 batch helper

@@ -102,3 +102,4 @@ Follow the `etl-overview` deliverable format:
 
 - `references/mcp-tool-contracts.md` — tool signatures and response shapes
 - `references/kb-memory-pointer-protocol.md` — memory pointer update spec
+- `references/subagent-dispatch-protocol.md` — subagent delegation spec
