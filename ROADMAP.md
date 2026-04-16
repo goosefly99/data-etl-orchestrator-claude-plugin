@@ -60,28 +60,20 @@ Plugin type: skills-only Claude Code plugin (no MCP server, no MCP tool surface)
 
 ## Blocking changes (carried from prior roadmap + new items)
 
-- [ ] **BUG-1** — Fix X user tweets routing in `etl-overview/SKILL.md`.
-- [ ] **BUG-2** — Add missing routes (X thread, load-kb-from-sql, local files) to the routing table.
-- [ ] **BUG-3** — Restore embeddings model question (Q6) in `etl-overview/SKILL.md` and `preflight-questionnaire.md`.
-- [ ] **BUG-4** — Migrate `article` -> `articles: Article[]` in all X skills + `mcp-tool-contracts.md`.
-- [ ] **CON-1** — Standardize `row_selector` across all skills.
-- [ ] **CON-2** — Fix `"crawled"` -> `"ok"` status vocabulary.
-- [ ] **CON-3** — Fix hash command platform mismatch in `ingest-local-files`.
-- [ ] **Stage-0 preflight contract-probe.** Before any ingest skill hands off to a sub-skill, the router MUST probe the installed sibling MCPs:
-  - `agent-knowledgebase`: call `kb_info` on a scratch KB; confirm response includes new `dominant_embedding_model` field.
-  - `youtube-mcp`: call `get_video_details` on a trivial public videoId with default params; confirm response envelope shape includes `statuses.transcript`.
-  - `x-api-mcp`: call `x_get_tweet` on a known public tweet; confirm response includes `articles: []` (array, not object).
-  Probe failure -> refuse to proceed; emit a structured "contract mismatch, install/upgrade X before using this plugin" message. Acceptance: skill-text block in `skills/etl-overview/SKILL.md` instructing the agent to run the probe; reference doc `skills/references/contract-probe-protocol.md` (NEW) spells out the 3 probe calls and expected response shapes.
-- [ ] **Subagent dispatch protocol reference doc.** Write `skills/references/subagent-dispatch-protocol.md` (NEW) that pins: prompt template for the Sonnet subagent, max context size, forbidden inputs (no raw transcript/tweet/article payloads ever reach the subagent), required report shape (counts, dedup hits, per-field statuses, failures). Acceptance: file exists; every SKILL.md that dispatches a subagent cross-references it.
-- [ ] **Install-ordering constraint documented in `README.md`.** "Install `agent-knowledgebase-auto-dev`, then `youtube-mcp-auto-dev` + `x-api-mcp-auto-dev`, then this plugin. Verify each with a probe call." Acceptance: README.md lines visible; cross-links to the three plugin repos.
-- [ ] **Stage-0 slash-command wrapper.** Add `commands/etl-config.md` (NEW) that wraps the 7-question questionnaire. The prose `AskUserQuestion` path remains the default; the slash command is available for repeat users. Acceptance: `.claude-plugin/plugin.json` lists the command; `commands/etl-config.md` exists; `skills/etl-overview/SKILL.md` mentions the slash-command option.
-- [ ] **Drop "zero tools" framing; use "no MCP tool surface."** Replace across `README.md`, every `SKILL.md`, and `.claude-plugin/plugin.json` description. Acceptance: `rg -n "zero tools|no tools"` only hits historical comments, not user-facing text.
-- [ ] **Reference `docs/safe-where-clause-grammar.md` (from agent-knowledgebase)** in `skills/references/mcp-tool-contracts.md` and `skills/load-kb-from-sql/SKILL.md`. Until agent-knowledgebase's AST validator ships, the skill MUST NOT encourage user-constructed free-form where clauses — show only pre-canned patterns by dedup key. Acceptance: `load-kb-from-sql/SKILL.md` shows 3 canned where-clause patterns (by `video_id`, by `saved_at` date range, by `author`) and states "no free-form filters until the safe-grammar doc is linked."
-- [ ] **Update `skills/references/mcp-tool-contracts.md`** to match the 3 server specs as they land:
-  - Add `articles: Article[]` (plural) to each of the 5 X tweet-fetch tool entries.
-  - Add transcript-status semantics table (`ok`/`missing`/`unavailable`/`failed`/`skipped` with retry behavior).
-  - Add per-kb_id serialization + 50-row hard-reject note to `kb_ingest_batch`.
-  - Add `dominant_embedding_model` field to `kb_info`.
+- [x] **BUG-1** — Fix X user tweets routing in `etl-overview/SKILL.md`. _(Phase 1, commit 8850282)_
+- [x] **BUG-2** — Add missing routes (X thread, load-kb-from-sql, local files) to the routing table. _(Phase 1, commit 8850282)_
+- [x] **BUG-3** — Restore embeddings model question (Q6) in `etl-overview/SKILL.md` and `preflight-questionnaire.md`. _(Phase 1, commit 8850282)_
+- [x] **BUG-4** — Migrate `article` -> `articles: Article[]` in all X skills + `mcp-tool-contracts.md`. _(Phase 2, commit edff64e)_
+- [x] **CON-1** — Standardize `row_selector` across all skills. _(Phase 2, commit edff64e)_
+- [x] **CON-2** — Fix `"crawled"` -> `"ok"` status vocabulary. _(Phase 2, commit edff64e)_
+- [x] **CON-3** — Fix hash command platform mismatch in `ingest-local-files`. _(Phase 4, commit 67f58be)_
+- [x] **Stage-0 preflight contract-probe.** Router probes 3 sibling MCPs before dispatch. _(Phase 3+4, commits de360f6, 67f58be)_
+- [x] **Subagent dispatch protocol reference doc.** `skills/references/subagent-dispatch-protocol.md` created; cross-referenced from all 6 delegating skills. _(Phase 3, commit de360f6)_
+- [x] **Install-ordering constraint documented in `README.md`.** Numbered install steps with verification commands. _(Phase 7, commit 5b5ab3e)_
+- [x] **Stage-0 slash-command wrapper.** `commands/etl-config.md` created; plugin.json updated; etl-overview mentions `/etl-config`. _(Phase 6, commit b6045d2)_
+- [x] **Drop "zero tools" framing; use "no MCP tool surface."** Replaced across README.md and plugin.json. _(Phase 7, commits 5b5ab3e, b5bd464)_
+- [x] **Reference `docs/safe-where-clause-grammar.md`** in mcp-tool-contracts.md and load-kb-from-sql; 3 canned WHERE patterns; "no free-form filters" warning. _(Phase 5, commit 656b215)_
+- [x] **Update `skills/references/mcp-tool-contracts.md`** — articles[] plural, transcript-status table, per-kb_id serialization, dominant_embedding_model. _(Phase 2, commit edff64e)_
 
 ## Recommended changes (ship if feasible)
 
