@@ -10,6 +10,7 @@ Invoke when the user says any of:
 - "load [playlist / videos / bookmarks / tweets] into [KB name]"
 - "add these YouTube videos / X bookmarks to my knowledge base"
 - `/etl-overview`
+- Alternatively, run `/etl-config` to answer only the Stage-0 questionnaire, then `/etl-overview` to execute with those answers.
 
 Do not invoke if a more specific sub-skill is already running and Stage 0 is complete.
 

@@ -1,7 +1,7 @@
 {
   "name": "data-etl-orchestrator",
-  "description": "Deterministic ETL orchestrator for YouTube, X, crawler, and local-file data sources into the agent-knowledgebase. Skills-only — agents never read or write payload bytes.",
-  "version": "0.1.0",
+  "description": "Deterministic ETL orchestrator for YouTube, X, crawler, and local-file data sources into the agent-knowledgebase. No MCP tool surface — agents never read or write payload bytes. Run /etl-config to configure, /etl-overview to execute.",
+  "version": "0.2.0",
   "author": {
     "name": "olive"
   },
