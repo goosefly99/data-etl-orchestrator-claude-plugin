@@ -47,11 +47,14 @@ Run a directory listing via `Bash` (e.g., `ls -la <path>` or `dir <path>`). Conf
 For individual files, compute hashes via `Bash`:
 
 ```bash
-# Linux/macOS
-sha256sum /absolute/path/to/file.pdf
-
 # Windows (PowerShell)
 Get-FileHash -Algorithm SHA256 "C:\absolute\path\to\file.pdf" | Select-Object -ExpandProperty Hash
+
+# Windows (cmd)
+certutil -hashfile "C:\absolute\path\to\file.pdf" SHA256
+
+# Linux/macOS
+sha256sum /absolute/path/to/file.pdf
 ```
 
 Capture the hash string only. Do not read, print, or relay any file content.

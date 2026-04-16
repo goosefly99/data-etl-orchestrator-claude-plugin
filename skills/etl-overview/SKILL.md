@@ -37,6 +37,18 @@ See `references/preflight-questionnaire.md` for the canonical question spec.
 
 ---
 
+## Contract probe (post-Stage-0, pre-dispatch)
+
+After Stage-0 confirmation is received (Q7 go-ahead), but BEFORE dispatching to any sub-skill:
+
+1. Run the 3 contract probe calls defined in `references/contract-probe-protocol.md`.
+2. If any probe fails, halt immediately and emit the structured error message specified in that document. Do not dispatch to a sub-skill.
+3. If the user said "skip contract probe" during Stage 0, skip this step but log a warning in the deliverable noting that probes were skipped.
+
+See `references/contract-probe-protocol.md` for the full probe spec (tool names, expected responses, and error message format).
+
+---
+
 ## Routing table
 
 After Stage 0 confirms the source type, dispatch to:
