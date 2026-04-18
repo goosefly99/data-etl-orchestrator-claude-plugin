@@ -155,11 +155,17 @@ Plugin type: skills-only Claude Code plugin (no MCP server, no MCP tool surface)
 **Verification:** `rg -n "zero tools|no tools" .` returns no user-facing hits; README has install-ordering section.
 
 ### Phase 8 — Dry-run walkthrough + publish
+**Status:** COMPLETE (tagged `v0.2.0`, closeout commit `700d67e`, date 2026-04-18).
 **Verification:**
-- Walkthrough per sub-skill: trigger router -> answer Stage-0 (all 7 questions) -> verify echoed plan -> handoff -> Stage-1 tool call visible in logs.
-- Manually run the contract probe against the 3 installed sibling servers; confirm all 3 respond with the new envelope fields.
-- Confirm `plugin.json` registers exactly 8 skills + 1 command + 0 tools + 0 mcpServers.
-- Publish to `goosefly99-plugins-auto-dev` marketplace.
+- [x] Walkthrough per sub-skill — 8/8 GREEN. Evidence: `skills/references/phase-8-dry-run-report.md`; scripts under `pipeline_mcp_data/scaffolds/phase-8-dry-runs/`; transcripts under `pipeline_mcp_data/scaffolds/phase-8-transcripts/`.
+- [x] Sibling contract probe — 15/15 sibling-gate tasks green (A1-A4 agent-knowledgebase, Y1-Y4 youtube-mcp, X0-X6 x-api-mcp). Evidence: `skills/references/release-gates.md` (refreshed 2026-04-17).
+- [x] `plugin.json` invariant — 8 skills + 1 command + 0 tools + 0 mcpServers (verified 2026-04-18).
+- [x] Payload-byte sweep — 0 hits across T1-T7 patterns on all 8 captured transcripts; max line 397 chars (< 400 cap).
+- [x] Static skill-body sweep — S1-S12 zero hits outside documented harness exceptions per `skills/references/phase-8-review-checklist.md`.
+- [x] Bug-closure regression check — 7/7 closed (BUG-1..BUG-4 + CON-1..CON-3). Evidence: `skills/references/bug-closure.md`.
+- [x] Publish to `goosefly99-plugins-auto-dev` marketplace — git tag `v0.2.0` on commit `700d67e` (this repo). Marketplace picks up tagged releases from the plugin repo.
+
+Phase-8 scaffold execution plan (`pipeline_mcp_data/scaffolds/ROADMAP.md`) phases 1-7 all closed; see scaffold ROADMAP for per-phase exit-criterion evidence.
 
 ---
 
