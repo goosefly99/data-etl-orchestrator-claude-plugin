@@ -13,7 +13,7 @@ Ensures repeat runs do not duplicate rows in source DBs or pages in the KB. With
 | YouTube videos | `video_id` | 11-char YouTube ID. One key per row in `videos`. |
 | YouTube transcripts | `(video_id, language)` | Composite. Supports multi-language; each language is a separate KB source. |
 | X tweets | `tweet_id` (`id` column) | Thread identity is `conversation_id`; individual tweet identity is `tweet_id`. |
-| X articles | `article_id` (`id` column) | For note_tweet / API source: `id == tweet_id`. For crawler-sourced: server-generated UUID. |
+| X articles | `article_id` (`id` column) | Polymorphic: `tweet_id` for API-sourced note-tweet articles; URL for crawler-sourced. Ref: `x-api-mcp-dev/db/repos/articles.ts` line 36. |
 | Local files | `sha256` of file bytes | Computed via Bash (`certutil -hashfile <path> SHA256` on Windows). File bytes never enter the agent context. |
 | Crawled pages | `canonical_url` | After redirect resolution. |
 
@@ -43,8 +43,28 @@ Skipping Stage 1 when rows already exist is a secondary optimization, not a corr
 
 The preflight questionnaire is itself idempotent. Re-running it with identical answers must produce the same resolved plan. If the user re-invokes the skill in the same or a new session, re-ask Stage 0 from scratch rather than reusing earlier answers from conversation memory. Conversation memory of prior Stage-0 answers is not reliable and must not substitute for a fresh questionnaire.
 
+See also: [preflight-questionnaire.md#re-run-and-persistence-policy](preflight-questionnaire.md#re-run-and-persistence-policy)
+for the same policy stated in the Stage-0 questionnaire's own reference doc.
+
 ---
 
 ## Why this matters for this plugin
 
 Stage-3 batch failures are recoverable by retrying only the delta (items not yet successfully ingested). This only works if the dedup check reliably identifies already-ingested items. Without it, retries re-ingest the full set and balloon KB page counts. The dedup sequence above is the mechanism that makes partial retries safe.
+
+---
+
+## Partial-success report shape
+
+When a sub-skill's ingest has mixed outcomes, each item's row conforms to:
+
+    { item_id: string,
+      status: "ok" | "missing" | "failed",
+      error: string | null,
+      dedup_result: "new" | "duplicate" }
+
+"missing" indicates the upstream MCP could not fetch the item (e.g., an
+X article that failed server-side auto-crawl). The parent insert still
+succeeds; only the sub-item row is marked.
+
+See also: `deliverable-format.md` for the surrounding 6-section deliverable format.

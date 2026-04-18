@@ -3,6 +3,13 @@ name: ingest-x-bookmarks
 description: "Ingest the authenticated user's X bookmarks (tweets + auto-crawled articles) into an agent-knowledgebase. Uses x_get_bookmarks with server-side article auto-crawl, then kb_ingest_batch. Trigger: 'ingest my X bookmarks into my KB', '/ingest-x-bookmarks'."
 ---
 
+## Stage-0 prerequisites
+
+Before dispatch, run the Stage-0 questionnaire — see
+[preflight-questionnaire.md](../references/preflight-questionnaire.md).
+
+---
+
 ## Preconditions
 
 - `x_authorize` must have been called and the session is authenticated before any X data operation.
@@ -91,20 +98,27 @@ x_get_bookmarks(max_results=<n>)
 
 ---
 
+## Idempotency and envelopes
+
+Dedup behaviour per source is documented in
+[idempotency-and-dedup.md](../references/idempotency-and-dedup.md).
+Sibling MCP response envelopes (including `articles: Article[]`) are
+pinned in [mcp-tool-contracts.md](../references/mcp-tool-contracts.md).
+
+---
+
 ## Deliverable
 
-Follow the `etl-overview` deliverable format:
-- Stage 0 echo (bookmark count, target KB, DB path, dedup policy).
-- Stage 1: tweet count, article coverage breakdown (ok / missing / failed).
-- Stage 2: `x_get_saved_tweets` and `x_get_saved_articles` counts vs. expected; delta re-fetched.
-- Stage 3: KB sources created (tweets + articles separately), dedup hits, batch calls made.
-- Partial failures list (failed article crawls with tweet ID and article URL).
-- Memory pointer update confirmation.
+This skill emits the standard ETL deliverable. See
+[deliverable-format.md](../references/deliverable-format.md).
 
 ---
 
 ## References
 
+- `references/preflight-questionnaire.md` — Stage 0 canonical spec
+- `references/deliverable-format.md` — standard deliverable structure
+- `references/idempotency-and-dedup.md` — dedup behaviour per source
 - `references/mcp-tool-contracts.md` — tool signatures and response shapes
 - `references/kb-memory-pointer-protocol.md` — memory pointer update spec
 - `references/subagent-dispatch-protocol.md` — subagent delegation spec

@@ -80,20 +80,34 @@ get_video_details(videoId=<id>, includeTranscript=true)
 
 ---
 
+## Stage-0 prerequisites
+
+Before dispatch, run the Stage-0 questionnaire — see
+[preflight-questionnaire.md](../references/preflight-questionnaire.md).
+
+---
+
+## Idempotency and envelopes
+
+Dedup behaviour per source is documented in
+[idempotency-and-dedup.md](../references/idempotency-and-dedup.md).
+Sibling MCP response envelopes and transcript-status semantics are
+pinned in [mcp-tool-contracts.md](../references/mcp-tool-contracts.md).
+
+---
+
 ## Deliverable
 
-Follow the `etl-overview` deliverable format:
-- Stage 0 echo (input list summary, target KB, DB path, dedup policy).
-- Stage 1: item count, transcript coverage (ok / missing / failed).
-- Stage 2: `get_saved_videos` row count vs. expected; delta re-fetched.
-- Stage 3: KB sources created, dedup hits, batch calls made.
-- Partial failures list.
-- Memory pointer update confirmation.
+This skill emits the standard ETL deliverable. See
+[deliverable-format.md](../references/deliverable-format.md).
 
 ---
 
 ## References
 
+- `references/preflight-questionnaire.md` — Stage-0 questionnaire
+- `references/deliverable-format.md` — standard deliverable format
+- `references/idempotency-and-dedup.md` — dedup behaviour per source
 - `references/mcp-tool-contracts.md` — tool signatures and response shapes
 - `references/kb-memory-pointer-protocol.md` — memory pointer update spec
 - `references/subagent-dispatch-protocol.md` — subagent delegation spec

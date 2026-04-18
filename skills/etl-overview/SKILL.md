@@ -67,16 +67,56 @@ After Stage 0 confirms the source type, dispatch to:
 
 ---
 
+## Router contract
+
+This section defines the invariants a future agent can rely on when
+invoking the etl-overview router.
+
+### Single sub-skill per run
+
+Every invocation dispatches to exactly one of the 7 ingest sub-skills
+(`ingest-local-files`, `ingest-x-bookmarks`, `ingest-x-thread`,
+`ingest-x-user-tweets`, `ingest-youtube-playlist`,
+`ingest-youtube-videos`, `load-kb-from-sql`). Composite runs that
+chain multiple sub-skills within a single etl-overview dispatch are
+explicitly out of v1 scope. To ingest multiple source types into the
+same knowledge base, invoke etl-overview multiple times.
+
+### Concurrent knowledge-base serialization
+
+When two runs target the same `kb_id`, the agent-knowledgebase MCP's
+per-`kb_id` lock serializes them (queue-then-retry). The orchestrator
+itself does not coordinate — it relies on agent-knowledgebase to
+reject concurrent writes and to retry on the caller's behalf. See
+the A3 per-`kb_id` lock in `agent_knowledge_base_plugin_dev/`.
+
+### Article-subfetch partial success
+
+For X ingest sub-skills that trigger server-side article auto-crawl,
+the per-tweet `articles: Article[]` envelope reports mixed outcomes
+without failing the parent tweet insert. The semantics are
+normatively documented in
+[mcp-tool-contracts.md](../references/mcp-tool-contracts.md) (article
+envelope section); do not re-inline that text here.
+
+### Stage-0 / deliverable-format invariants
+
+Every dispatch first runs the Stage-0 questionnaire
+([preflight-questionnaire.md](../references/preflight-questionnaire.md))
+and then the contract probe
+([contract-probe-protocol.md](../references/contract-probe-protocol.md)).
+Every sub-skill emits a deliverable conforming to
+[deliverable-format.md](../references/deliverable-format.md).
+Per-source dedup semantics are pinned in
+[idempotency-and-dedup.md](../references/idempotency-and-dedup.md).
+
+---
+
 ## Deliverable format
 
-Final report must include:
-
-- **Stage 0 echo** — source, target KB, DB path, granularity, dedup policy.
-- **Stage 1 counts** — items fetched, transcript/article coverage (ok / missing / failed per item).
-- **Stage 2 diff** — desired vs. saved row counts; delta re-fetched.
-- **Stage 3 counts** — KB sources created, dedup hits skipped/updated, batch call count.
-- **Partial failures** — list each failed item with reason (e.g., `video_id=abc123: transcript missing, metadata-only ingested`).
-- **Memory pointers updated** — confirm `memory/kb_<slug>.md` and `MEMORY.md` index line reflect the KB state.
+Every dispatch emits the standard ETL deliverable. See
+[deliverable-format.md](../references/deliverable-format.md) for the 6-section template
+and the per-item partial-success row shape.
 
 ---
 
@@ -93,6 +133,9 @@ Final report must include:
 ## References
 
 - `references/preflight-questionnaire.md` — canonical Stage 0 question spec
-- `references/mcp-tool-contracts.md` — authoritative tool signatures and response contracts
-- `references/kb-memory-pointer-protocol.md` — memory pointer update spec
 - `references/contract-probe-protocol.md` — contract probe spec
+- `references/mcp-tool-contracts.md` — authoritative tool signatures and response envelopes (including articles: Article[])
+- `references/deliverable-format.md` — canonical 6-section output format
+- `references/idempotency-and-dedup.md` — dedup keys per source and re-run policy
+- `references/kb-memory-pointer-protocol.md` — memory pointer update spec
+- `references/INDEX.md` — discoverability index of all reference docs (added by Phase 4)

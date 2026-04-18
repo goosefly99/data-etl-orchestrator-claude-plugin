@@ -3,6 +3,13 @@ name: load-kb-from-sql
 description: "Load SQLite cache DB rows into an agent-knowledgebase via kb_ingest_batch(source_type=sql_database). Stage-3 helper for all ingest-* skills; also standalone. Trigger: 'load DB into KB', '/load-kb-from-sql'."
 ---
 
+## Stage-0 prerequisites
+
+Before dispatch, run the Stage-0 questionnaire — see
+[preflight-questionnaire.md](../references/preflight-questionnaire.md).
+
+---
+
 ## When to use this skill
 
 - Called by `ingest-x-user-tweets`, `ingest-x-thread`, `ingest-x-bookmarks`, `ingest-youtube-videos`, `ingest-youtube-playlist` as their Stage 3 step.
@@ -149,15 +156,19 @@ When invoked standalone, offer to delegate the batch loop to a Sonnet subagent b
 
 ---
 
-## Deliverable format
+## Deliverable
 
-Final report must include:
+This skill emits the standard ETL deliverable. See
+[deliverable-format.md](../references/deliverable-format.md).
 
-- **Per-table summary** — table name, total rows targeted, dedup hits (count + policy), rows ingested, failures.
-- **Per-batch log** — batch index, rows in chunk, ingestion result (ok / partial / failed), elapsed time.
-- **Final `kb_list_pages` count** — total KB pages after ingestion vs. before.
-- **Memory pointer status** — updated / already current / update failed (with reason).
-- **Failures** — list each failed row/chunk with reason. Partial success is not treated as overall failure.
+---
+
+## Idempotency and envelopes
+
+Dedup behaviour per source is documented in
+[idempotency-and-dedup.md](../references/idempotency-and-dedup.md).
+Sibling MCP response envelopes and kb_ingest_batch semantics are
+pinned in [mcp-tool-contracts.md](../references/mcp-tool-contracts.md).
 
 ---
 
@@ -174,7 +185,11 @@ Final report must include:
 
 ## References
 
-- `references/mcp-tool-contracts.md` — tool signatures and response contracts
-- `references/kb-memory-pointer-protocol.md` — memory pointer update spec
 - `references/preflight-questionnaire.md` — Stage 0 canonical spec
+- `references/deliverable-format.md` — standard ETL deliverable format
+- `references/idempotency-and-dedup.md` — dedup behaviour per source
+- `references/mcp-tool-contracts.md` — tool signatures and response contracts
+- `references/kb-source-types.md` — source type registry (this skill: sql_database only)
+- `references/source-db-schemas.md` — SQLite schema reference for all source DBs
+- `references/kb-memory-pointer-protocol.md` — memory pointer update spec
 - `references/subagent-dispatch-protocol.md` — subagent delegation spec

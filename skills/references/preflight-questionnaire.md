@@ -112,3 +112,39 @@ Do not invoke any Stage 1 tool until the user replies "yes".
 ## Implementation note
 
 Issue Questions 1–6 via `AskUserQuestion` calls. The tool supports up to 4 questions per call; group related sub-questions together to minimize round-trips. Question 7 is a final single-select confirmation using a preview of the resolved plan text. Never skip Question 7 even if Questions 1–6 seemed unambiguous.
+
+---
+
+## Re-run and persistence policy
+
+The preflight questionnaire is itself idempotent. Re-running it with
+identical answers must produce the same resolved plan. If the user
+re-invokes the skill in the same session or a new session, re-ask
+Stage 0 from scratch rather than reusing earlier answers from
+conversation memory. Conversation memory of prior Stage-0 answers is
+not reliable and must not substitute for a fresh questionnaire.
+
+This text is duplicated in
+[idempotency-and-dedup.md](idempotency-and-dedup.md) under "Idempotent
+Stage 0"; the two sections must stay in sync. If the re-run policy
+ever changes, update both locations.
+
+---
+
+## AskUserQuestion grouping guidance
+
+Claude Code's `AskUserQuestion` tool accepts 1–4 questions per call,
+with 2–4 options per question. Deliver the 7-question Stage-0
+questionnaire in two calls:
+
+- **Call 1:** Q1 (Target KB), Q2 (Source), Q3 (DB path override),
+  Q4 (KB ingest granularity).
+- **Call 2:** Q5 (dedup policy), Q6 (embeddings model), Q7
+  (confirmation).
+
+Q7 is a single-select confirmation of the resolved plan and must appear
+as the last question in call 2. Never pack Q7 into call 1.
+
+If `AskUserQuestion` is unavailable in the current harness, fall back
+to sequential per-question prompts; do not collapse multi-part answers
+into a single free-text reply.

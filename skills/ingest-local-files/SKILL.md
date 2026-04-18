@@ -14,6 +14,13 @@ Do not invoke if `etl-overview` Stage 0 is not yet complete.
 
 ---
 
+## Stage-0 prerequisites
+
+Before dispatch, run the Stage-0 questionnaire — see
+[preflight-questionnaire.md](../references/preflight-questionnaire.md).
+
+---
+
 ## Preconditions
 
 Stage 0 must be complete (see `skills/etl-overview/SKILL.md`). Required answers:
@@ -123,14 +130,19 @@ kb_ingest_batch([
 
 ---
 
-## Deliverable format
+## Deliverable
 
-Final report must include:
+This skill emits the standard ETL deliverable. See
+[deliverable-format.md](../references/deliverable-format.md).
 
-- **Stage 0 echo** — paths, mode (file/directory), target KB, dedup policy, granularity.
-- **Stage 2 results** — files confirmed accessible, hashes computed, dedup hits (count and policy applied).
-- **Stage 3 counts** — KB sources created, dedup hits skipped/updated, batch call count, failures with reason (format, access denied, etc.).
-- **Memory pointer** — confirm `memory/kb_<slug>.md` and `MEMORY.md` reflect current KB state.
+---
+
+## Idempotency and envelopes
+
+Dedup behaviour per source is documented in
+[idempotency-and-dedup.md](../references/idempotency-and-dedup.md).
+Sibling MCP response envelopes (including `articles: Article[]`) are
+pinned in [mcp-tool-contracts.md](../references/mcp-tool-contracts.md).
 
 ---
 
@@ -147,6 +159,8 @@ Final report must include:
 
 ## References
 
+- `references/preflight-questionnaire.md` — Stage 0 canonical spec
+- `references/deliverable-format.md` — standard deliverable structure
+- `references/idempotency-and-dedup.md` — dedup behaviour per source
 - `references/mcp-tool-contracts.md` — tool signatures and response contracts
 - `references/kb-memory-pointer-protocol.md` — memory pointer update spec
-- `references/preflight-questionnaire.md` — Stage 0 canonical spec
