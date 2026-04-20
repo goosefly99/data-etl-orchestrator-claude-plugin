@@ -72,11 +72,13 @@ All five return full tweet metadata and text body, and write a `tweets` row with
 "articles": [
   {
     "status": "ok" | "missing" | "failed",
-    "url": "...",        // present if status != "missing"
-    "article_id": "..."  // present if status == "ok"
+    "url": "<...>",        // present if status != "missing"
+    "article_id": "<...>"  // present if status == "ok"
   }
 ]
 ```
+
+**TweetArticlesEnvelope array shape (X3 refactor):** The orchestrator-visible return shape of `articleIngestService.ingestForTweets` / `resolveArticlesForTweets` is `TweetArticlesEnvelope = { tweetId, articles: Article[] }[]` — zod-validated via `tweetArticlesEnvelopeSchema`, reused by contract-probe-protocol probe-4 in Phase 4. See `x-api-mcp/types.ts` for the canonical definition (replaces the prior `Map<tweetId, Article[]>` return shape so downstream consumers can `.map()` uniformly).
 
 ### Read-only / manual-override accessors (not in ingest path)
 
@@ -113,12 +115,42 @@ All five return full tweet metadata and text body, and write a `tweets` row with
 - `kb_ingest(kb_id, source_type, uri, metadata)` — ingest a single source.
 - `kb_ingest_batch(kb_id, sources)` — ingest an array of `{ source_type, uri, metadata }` objects. Processing is sequential server-side. Recommended batch size: ≤50 sources per call. All `kb_ingest_batch` calls for a given `kb_id` are serialized server-side. Concurrent calls targeting the same KB will queue. Batch size hard-reject threshold: 50 rows per call.
 
-  The `row_selector` field accepts a WHERE clause fragment. Until `docs/safe-where-clause-grammar.md` ships with an AST validator, only canned patterns are permitted — see `skills/load-kb-from-sql/SKILL.md` for the 3 allowed patterns.
+  The `row_selector` field accepts a WHERE clause fragment validated by the sqlparse-AST allow-list. See `safe-where-clause-grammar.md` for accepted `row_selector` grammar.
 
 ### Verification and dedup
 
 - `kb_list_pages(kb_id, page_type)` — list KB pages; includes per-page metadata (used to check dedup keys).
 - `kb_list_sources(kb_id)` — list ingested sources.
+
+### Pipeline status (v2 telemetry row)
+
+- `kb_pipeline_status(kb_id)` — returns a JSON array of `PipelineRun` records.
+- **Tool signature unchanged** from v0.5.x; only the per-run payload is expanded. v0.6.0 adds nine additive, optional fields to each run: `ingested`, `skipped`, `replaced`, `failed`, `batch_size`, `dedup_policy`, `request_id`, `tool_caller_version`, and `ended_at`. All default to `null` on pre-migration rows so historical runs deserialize unchanged.
+- Source: `agent-knowledgebase/src/agent_knowledgebase/server.py::kb_pipeline_status` (model `PipelineRun` in `models.py`).
+- Consumers MUST treat every v0.6.0 field as optional — do not assume presence when reading older rows.
+
+---
+
+## better-sqlite3 (x-api-mcp) vs node:sqlite (youtube-mcp) asymmetry
+
+The two TypeScript sibling MCPs ship distinct SQLite bindings. The matrix below pins the runtime differences the orchestrator's skills must assume. Zero-code-change doc. Normalization timeline is a carried-forward OQ for v0.4.0.
+
+| Dimension | better-sqlite3 (x-api-mcp) | node:sqlite (youtube-mcp) |
+|---|---|---|
+| WAL mode | `db.pragma('journal_mode = WAL')` at init; stable | `db.exec('PRAGMA journal_mode=WAL')`; same syntax, different semantics around checkpoint |
+| Transaction isolation | `db.transaction(fn)(...)` wraps with IMMEDIATE | explicit `BEGIN/COMMIT/ROLLBACK` via withTransaction helper |
+| Lock granularity | Full-database lock on writes; synchronous API | Same on-disk semantics; different async interop |
+| API shape | Sync | Sync |
+
+Zero-code-change doc. Normalization timeline is a carried-forward OQ for v0.4.0.
+
+---
+
+## Transcript retry semantics (youtube-mcp)
+
+The `transcript: "unavailable"` and `transcript: "failed"` statuses are transient and retriable. The retry cadence (attempt count, backoff curve, cache eviction policy) is pinned in `docs/transcript-retry-semantics.md` (ships in youtube-mcp v0.5.0). Orchestrator skills defer retry decisions to the MCP server rather than re-calling from the agent context.
+
+See `docs/transcript-retry-semantics.md` (ships in youtube-mcp v0.5.0).
 
 ---
 
