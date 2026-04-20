@@ -1,29 +1,40 @@
 # Phase 8 dry-run report — payload-byte compliance
 
-**Aggregate verdict: 8/8 GREEN.** Publish gate satisfied.
+**Aggregate verdict: 8/8 GREEN** on 2026-04-17 (v0.2.0 baseline: S1-S12 + T1-T7 + Format OK).
+**Phase 4 addition (2026-04-20):** S13 + Probe OK (4/4 contract probes) are part of the
+forward-looking template below; they will be populated on the next full dry-run pass before
+v1.0.0 publish. Current v0.2.0 publish-gate status remains GREEN.
 
-Date: 2026-04-17
+Date: 2026-04-17 (initial pass); template updated 2026-04-20 for Phase 4.
 Dry-run id series: 20260417-2136 .. 20260417-2137
 Harness: Option B (markdown reviewer checklist per `phase-8-assertions.md`).
-Checklist source: `phase-8-review-checklist.md` (S1-S12 static, T1-T7 transcript).
+Checklist source: `phase-8-review-checklist.md` (S1-S13 static, T1-T7 transcript).
 Deliverable format source: `deliverable-format.md` (6-section contract).
 
 ## Summary table
 
-| # | Sub-skill / router              | Variant          | Static (S1-S12) | Transcript (T1-T7) | Format (6 sections) | Verdict |
-|---|---------------------------------|------------------|-----------------|--------------------|---------------------|---------|
-| 1 | ingest-youtube-videos           | happy            | [x] zero hits   | [x] zero hits      | [x] 6/6             | GREEN   |
-| 2 | ingest-youtube-playlist         | partial-success  | [x] zero hits   | [x] zero hits      | [x] 6/6             | GREEN   |
-| 3 | ingest-x-bookmarks              | happy            | [x] zero hits   | [x] zero hits      | [x] 6/6             | GREEN   |
-| 4 | ingest-x-thread                 | happy            | [x] zero hits   | [x] zero hits      | [x] 6/6             | GREEN   |
-| 5 | ingest-x-user-tweets            | partial-success  | [x] zero hits   | [x] zero hits      | [x] 6/6             | GREEN   |
-| 6 | load-kb-from-sql                | happy            | [x] zero hits   | [x] zero hits      | [x] 6/6             | GREEN   |
-| 7 | ingest-local-files              | happy            | [x] zero hits   | [x] zero hits      | [x] 6/6             | GREEN   |
-| 8 | etl-overview (router)           | dispatch         | [x] zero hits   | [x] zero hits      | [x] 6/6             | GREEN   |
+Columns: Static (S1-S13), Transcript (T1-T7), Format (6 sections), Probe (4/4 contract probes).
+`[x]` = asserted during the 2026-04-17 v0.2.0 pass. `[~]` = Phase 4 addition; pending first
+full re-run. An aggregate re-verdict is required before v1.0.0 publish.
 
-Aggregate: **8/8 green.** Anything other than 8/8 blocks publish — gate clear.
+| # | Sub-skill / router              | Variant          | Static (S1-S13) | Transcript (T1-T7) | Format (6 sections) | Probe (4/4) | Verdict |
+|---|---------------------------------|------------------|-----------------|--------------------|---------------------|-------------|---------|
+| 1 | ingest-youtube-videos           | happy            | [x] S1-S12 / [~] S13 | [x] zero hits | [x] 6/6           | [~] pending | GREEN (v0.2.0 baseline) |
+| 2 | ingest-youtube-playlist         | partial-success  | [x] S1-S12 / [~] S13 | [x] zero hits | [x] 6/6           | [~] pending | GREEN (v0.2.0 baseline) |
+| 3 | ingest-x-bookmarks              | happy            | [x] S1-S12 / [~] S13 | [x] zero hits | [x] 6/6           | [~] pending | GREEN (v0.2.0 baseline) |
+| 4 | ingest-x-thread                 | happy            | [x] S1-S12 / [~] S13 | [x] zero hits | [x] 6/6           | [~] pending | GREEN (v0.2.0 baseline) |
+| 5 | ingest-x-user-tweets            | partial-success  | [x] S1-S12 / [~] S13 | [x] zero hits | [x] 6/6           | [~] pending | GREEN (v0.2.0 baseline) |
+| 6 | load-kb-from-sql                | happy            | [x] S1-S12 / [~] S13 | [x] zero hits | [x] 6/6           | [~] pending | GREEN (v0.2.0 baseline) |
+| 7 | ingest-local-files              | happy            | [x] S1-S12 / [~] S13 | [x] zero hits | [x] 6/6           | [~] pending | GREEN (v0.2.0 baseline) |
+| 8 | etl-overview (router)           | dispatch         | [x] S1-S12 / [~] S13 | [x] zero hits | [x] 6/6           | [~] pending | GREEN (v0.2.0 baseline) |
+
+Aggregate (v0.2.0 publish gate, 2026-04-17): **8/8 green** on the S1-S12 + T1-T7 + Format axes.
+Aggregate (v1.0.0 publish gate, forward-looking): re-run S1-S13 + T1-T7 + Format + Probe-4 on all 8 rows;
+flip `[~]` to `[x]` on a fresh pass. Anything other than 8/8 blocks publish — gate clear as of v0.2.0.
 
 ## Per-run detail
+
+> **Phase 4 addition (2026-04-20):** per-run entries below were captured during the 2026-04-17 v0.2.0 baseline pass. Each entry's `Static OK` line now carries a `[~] S13 pending re-run` marker and a new `[~] Probe OK (4/4)` assertion is implied per the checklist template in `phase-8-review-checklist.md`. A fresh dry-run pass before v1.0.0 publish will flip both markers.
 
 ### ingest-youtube-videos
 
@@ -32,7 +43,7 @@ Aggregate: **8/8 green.** Anything other than 8/8 blocks publish — gate clear.
 - Script: `pipeline_mcp_data/scaffolds/phase-8-dry-runs/ingest-youtube-videos.md`
 - Transcript: `pipeline_mcp_data/scaffolds/phase-8-transcripts/ingest-youtube-videos.txt` (5231 bytes)
 - Assertions:
-  - [x] Static OK (S1-S12) — no `Read(*.txt|.vtt|.srt)`, no payload Write, no deprecated vocabulary
+  - [x] Static OK (S1-S12) / [~] S13 pending re-run (Phase 4 addition) — no `Read(*.txt|.vtt|.srt)`, no payload Write, no deprecated vocabulary
   - [x] Transcript OK (T1-T7) — no long `transcript_text=`/`full_text=`/`article_body=`/`page_text=` literals; max line 192 chars
   - [x] Format OK (6 sections) — Stage-0 echo, Stage-1 counts, Stage-2 diff, Stage-3 counts, partial failures, memory pointers
 - Extra assertions:
@@ -47,7 +58,7 @@ Aggregate: **8/8 green.** Anything other than 8/8 blocks publish — gate clear.
 - Script: `pipeline_mcp_data/scaffolds/phase-8-dry-runs/ingest-youtube-playlist.md`
 - Transcript: `pipeline_mcp_data/scaffolds/phase-8-transcripts/ingest-youtube-playlist.txt` (8031 bytes)
 - Assertions:
-  - [x] Static OK (S1-S12)
+  - [x] Static OK (S1-S12) / [~] S13 pending re-run (Phase 4 addition)
   - [x] Transcript OK (T1-T7) — max line 304 chars
   - [x] Format OK — partial-failures section enumerates `missing` + `failed` videoIds with status tokens only
 - Extra assertions:
@@ -62,7 +73,7 @@ Aggregate: **8/8 green.** Anything other than 8/8 blocks publish — gate clear.
 - Script: `pipeline_mcp_data/scaffolds/phase-8-dry-runs/ingest-x-bookmarks.md`
 - Transcript: `pipeline_mcp_data/scaffolds/phase-8-transcripts/ingest-x-bookmarks.txt` (6332 bytes)
 - Assertions:
-  - [x] Static OK (S1-S12) — no `article:` singular; uses plural `articles:`
+  - [x] Static OK (S1-S12) / [~] S13 pending re-run (Phase 4 addition) — no `article:` singular; uses plural `articles:`
   - [x] Transcript OK (T1-T7) — max line 186 chars
   - [x] Format OK (6 sections)
 - Extra assertions:
@@ -76,7 +87,7 @@ Aggregate: **8/8 green.** Anything other than 8/8 blocks publish — gate clear.
 - Script: `pipeline_mcp_data/scaffolds/phase-8-dry-runs/ingest-x-thread.md`
 - Transcript: `pipeline_mcp_data/scaffolds/phase-8-transcripts/ingest-x-thread.txt` (5527 bytes)
 - Assertions:
-  - [x] Static OK (S1-S12)
+  - [x] Static OK (S1-S12) / [~] S13 pending re-run (Phase 4 addition)
   - [x] Transcript OK (T1-T7) — max line 397 chars (under 400 cap)
   - [x] Format OK (6 sections)
 - Verdict: **GREEN**
@@ -88,7 +99,7 @@ Aggregate: **8/8 green.** Anything other than 8/8 blocks publish — gate clear.
 - Script: `pipeline_mcp_data/scaffolds/phase-8-dry-runs/ingest-x-user-tweets.md`
 - Transcript: `pipeline_mcp_data/scaffolds/phase-8-transcripts/ingest-x-user-tweets.txt` (9416 bytes)
 - Assertions:
-  - [x] Static OK (S1-S12) — no `where:` row_selector vocabulary; no `crawled`/`scraped` status
+  - [x] Static OK (S1-S12) / [~] S13 pending re-run (Phase 4 addition) — no `where:` row_selector vocabulary; no `crawled`/`scraped` status
   - [x] Transcript OK (T1-T7) — max line 354 chars
   - [x] Format OK — partial-failures enumerates the timeout + 404 cases with status + reason tokens
 - Extra assertions:
@@ -102,7 +113,7 @@ Aggregate: **8/8 green.** Anything other than 8/8 blocks publish — gate clear.
 - Script: `pipeline_mcp_data/scaffolds/phase-8-dry-runs/load-kb-from-sql.md`
 - Transcript: `pipeline_mcp_data/scaffolds/phase-8-transcripts/load-kb-from-sql.txt` (6448 bytes)
 - Assertions:
-  - [x] Static OK (S1-S12) — only `source_type=sql_database` present (S6); no `x-article.*canonical URL` (S11)
+  - [x] Static OK (S1-S12) / [~] S13 pending re-run (Phase 4 addition) — only `source_type=sql_database` present (S6); no `x-article.*canonical URL` (S11)
   - [x] Transcript OK (T1-T7) — max line 241 chars
   - [x] Format OK (6 sections)
 - Extra assertions:
@@ -117,7 +128,7 @@ Aggregate: **8/8 green.** Anything other than 8/8 blocks publish — gate clear.
 - Script: `pipeline_mcp_data/scaffolds/phase-8-dry-runs/ingest-local-files.md`
 - Transcript: `pipeline_mcp_data/scaffolds/phase-8-transcripts/ingest-local-files.txt` (8686 bytes)
 - Assertions:
-  - [x] Static OK (S1-S12) — Phase-8 convention uses `source_type=sql_database` over a file-index view (spec divergence noted in dry-run script header)
+  - [x] Static OK (S1-S12) / [~] S13 pending re-run (Phase 4 addition) — Phase-8 convention uses `source_type=sql_database` over a file-index view (spec divergence noted in dry-run script header)
   - [x] Transcript OK (T1-T7) — max line 277 chars
   - [x] Format OK (6 sections)
 - Note: Phase-8 rig standardises on `sql_database` source_type for all KB ingest entrypoints; the sub-skill's user-facing vocabulary (`source_type=file`) is unchanged in source, but the test rig's sql_database-over-view convention preserves the S6 pattern rule.
@@ -130,7 +141,7 @@ Aggregate: **8/8 green.** Anything other than 8/8 blocks publish — gate clear.
 - Script: `pipeline_mcp_data/scaffolds/phase-8-dry-runs/etl-overview.md`
 - Transcript: `pipeline_mcp_data/scaffolds/phase-8-transcripts/etl-overview.txt` (4323 bytes)
 - Assertions:
-  - [x] Static OK (S1-S12) — Stage-0 echo inlined only in `references/deliverable-format.md` (S12 single-source enforced)
+  - [x] Static OK (S1-S12) / [~] S13 pending re-run (Phase 4 addition) — Stage-0 echo inlined only in `references/deliverable-format.md` (S12 single-source enforced)
   - [x] Transcript OK (T1-T7) — max line 166 chars
   - [x] Format OK — router stops at Stage-0 echo + dispatch note; delegates rest to sub-skill
 - Extra assertions:

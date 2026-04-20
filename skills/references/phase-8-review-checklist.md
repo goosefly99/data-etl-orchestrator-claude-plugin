@@ -24,11 +24,11 @@ A **payload byte** is any of:
 Open-question-3 caveat: URLs like pastebin links may themselves be payload.
 v1 accepts this risk. Revisit in v2 if observed.
 
-## Static skill-text checks (S1-S12)
+## Static skill-text checks (S1-S13)
 
 Run each grep against `data-etl-orchestrator/skills/`. **Every row must return zero hits** (excluding the noted exceptions).
 
-Scope note: S1-S12 are checks on *skill body content* (the SKILL.md files and the canonical references they cite). The following reference files are self-documenting harness artifacts and are excluded from S9-S12 counting by convention: `skills/references/bug-closure.md`, `skills/references/phase-8-review-checklist.md` (this file), and `skills/references/phase-8-dry-run-report.md`. They necessarily quote the forbidden patterns to describe them. Use the `--glob` excludes in the shell form below when running the battery mechanically.
+Scope note: S1-S13 are checks on *skill body content* (the SKILL.md files and the canonical references they cite). The following reference files are self-documenting harness artifacts and are excluded from S9-S13 counting by convention: `skills/references/bug-closure.md`, `skills/references/phase-8-review-checklist.md` (this file), `skills/references/phase-8-dry-run-report.md`, and `skills/references/phase-8-assertions.md` (defines S13 normatively). They necessarily quote the forbidden patterns to describe them. Use the `--glob` excludes in the shell form below when running the battery mechanically.
 
 | # | Pattern | Expected hits | Exceptions |
 |---|---------|---------------|------------|
@@ -44,6 +44,7 @@ Scope note: S1-S12 are checks on *skill body content* (the SKILL.md files and th
 | S10 | `sha256sum` (Windows-incompatible CLI) | 0 hits outside a `# Linux/macOS` label | CON-3 permits `sha256sum` inside an explicit `# Linux/macOS` block after Windows (`Get-FileHash`/`certutil`) primary guidance; exclude `references/bug-closure.md` and `references/phase-8-review-checklist.md` |
 | S11 | `x-article.*canonical URL` (v0.1.0 spec error SE-2) | 0 | polymorphic id required per C5; exclude `references/phase-8-review-checklist.md` (documents the forbidden pattern) and `references/phase-8-dry-run-report.md` (assertion labels) |
 | S12 | Stage-0 echo inlined | the literal Stage-0 echo template appears only in `references/deliverable-format.md` | the phrase "Stage-0 echo" (as an assertion/section label) may appear in `references/phase-8-review-checklist.md` and `references/phase-8-dry-run-report.md`; C3 enforces single source for the *template body* |
+| S13 | `\b(crawled\|scraped\|queued\|in_progress)\b` (unified status vocab — broader than S9) | 0 status-comparison hits | ensemble status vocab is `ok\|missing\|failed` (youtube adds `unavailable\|skipped` at tool boundary); `queued`/`in_progress` legacy tokens are forbidden anywhere; prose-adjective carve-outs from S9 apply for `crawled`/`scraped`; exclude `references/bug-closure.md`, `references/phase-8-review-checklist.md`, `references/phase-8-dry-run-report.md`, `references/phase-8-assertions.md`, and `references/source-db-schemas.md` (schema column `source='crawl'`) |
 | SN-legacy-grammar-warning | `until.*safe-where-clause-grammar.*ships` | 0 | self-documenting hits in `references/phase-8-review-checklist.md` (this file defines the pattern) are excluded via `$HX`. Run: `rg 'until.*safe-where-clause-grammar.*ships' skills/ $HX` — expect zero hits |
 
 Shell form (copy-paste for a fresh operator):
@@ -53,7 +54,9 @@ set -e
 cd /path/to/data-etl-orchestrator
 R=skills/
 # Harness-doc excludes: self-documenting files that quote the forbidden patterns.
+# S13 additionally excludes phase-8-assertions.md (defines S13 pattern normatively).
 HX="-g !skills/references/bug-closure.md -g !skills/references/phase-8-review-checklist.md -g !skills/references/phase-8-dry-run-report.md"
+HX13="$HX -g !skills/references/phase-8-assertions.md -g !skills/references/source-db-schemas.md"
 
 echo "S1" ; ! rg -nq 'Read\(.*transcript.*\.(txt|vtt|srt)\)' $R
 echo "S2" ; ! rg -nq 'Read\(.*\.txt\)' $R
@@ -70,6 +73,10 @@ echo "S10"; ! rg -nqU 'sha256sum' $R $HX
 echo "S11"; ! rg -nq 'x-article.*canonical URL' $R $HX
 # S12: the Stage-0 echo *template* appears only in deliverable-format.md. Label-only mentions in harness docs are allowed.
 echo "S12"; test "$(rg -c 'Stage-0 echo' $R $HX | grep -v deliverable-format.md | wc -l)" -eq 0
+# S13: unified status vocabulary — broader than S9, adds `queued|in_progress`. Status-comparison form;
+# prose-adjective carve-outs ("auto-crawled articles") inherited from S9. Exclude harness docs,
+# phase-8-assertions.md (defines S13), and source-db-schemas.md (legitimate source='crawl' column value).
+echo "S13"; ! rg -nq 'status\s*[:=]\s*["'\'']?(crawled|scraped|queued|in_progress)\b' $R $HX13
 # SN-legacy-grammar-warning: the pre-Phase-1 "until ... safe-where-clause-grammar.md ships" gating prose is retired.
 # This file necessarily defines the pattern, so exclude via $HX.
 echo "SN-legacy-grammar-warning"; ! rg -nq 'until.*safe-where-clause-grammar.*ships' $R $HX
@@ -120,7 +127,7 @@ echo "ALL TRANSCRIPT CHECKS PASS"
 Each sub-skill dry-run must log these three machine-verifiable assertions
 into `skills/references/phase-8-dry-run-report.md`:
 
-1. **Static OK:** section 2's S1-S12 all zero hits.
+1. **Static OK:** section 2's S1-S13 all zero hits.
 2. **Transcript OK:** section 3's T1-T7 all zero hits on this run's
    transcript.
 3. **Format OK:** emitted deliverable contains all 6 sections from
@@ -133,6 +140,34 @@ Recommended extra assertions (not required but increase evidence):
 5. **Dedup OK:** per-item `dedup_result` is one of `new` or `duplicate`.
 6. **Envelope OK:** for X sub-skills, every tweet has an `articles: []`
    field (possibly empty) and each entry has status `ok|missing|failed`.
+7. **Probe OK:** `references/contract-probe-protocol.md` returns 4/4 GREEN
+   on a fresh run (probes 1-3 + probe-4 ensemble).
+
+## PR-time sibling-repo status-vocabulary sweep (Phase 4)
+
+Before merging any orchestrator PR, run the S13 pattern across the 3 sibling
+repos as a cross-plugin guard. This catches legacy status tokens that might
+leak into sibling code between releases; the orchestrator's own skills/ are
+covered by S13 above.
+
+```
+[ ] Run rg -n '\b(crawled|scraped|queued|in_progress)\b' against each sibling repo:
+    - ../agent_knowledge_base_plugin_dev/src/
+    - ../x-api-mcp-dev/ (excluding node_modules)
+    - ../youtube-mcp-dev/src/
+    Expected: zero hits unless the hit is a DB column value (check source-db-schemas.md for the legitimate exclusions).
+```
+
+Shell form (copy-paste):
+
+```bash
+rg -n '\b(crawled|scraped|queued|in_progress)\b' ../agent_knowledge_base_plugin_dev/src/
+rg -n '\b(crawled|scraped|queued|in_progress)\b' --glob '!node_modules' ../x-api-mcp-dev/
+rg -n '\b(crawled|scraped|queued|in_progress)\b' ../youtube-mcp-dev/src/
+```
+
+Any non-zero result outside documented DB column values is a PR blocker.
+Resolve in the owning sibling repo before merging the orchestrator PR.
 
 ## Red-flag disqualifying patterns
 
@@ -157,9 +192,10 @@ For each dry-run, append a section to
 - Dry-run id: <yyyymmdd-hhmm>
 - Variant: happy | partial-success
 - Assertions:
-  - [x] Static OK (S1-S12)
+  - [x] Static OK (S1-S13)
   - [x] Transcript OK (T1-T7)
   - [x] Format OK (6 sections)
+  - [x] Probe OK (4/4 contract probes GREEN)
 - Evidence:
   - transcript: pipeline_mcp_data/scaffolds/phase-8-transcripts/<skill>.txt
   - harness run: <command>
