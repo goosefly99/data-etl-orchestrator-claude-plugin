@@ -116,7 +116,7 @@ For each chunk, issue one sequential `kb_ingest_batch` call using one of the 3 c
 }
 ```
 
-> **No free-form filters.** Do not construct arbitrary WHERE clauses from user input. Use only the 3 canned patterns above until `docs/safe-where-clause-grammar.md` ships with an AST-validated grammar. Free-form filters risk SQL injection via the `row_selector` field.
+> **WHERE-clause allow-list enforced server-side.** See `skills/references/safe-where-clause-grammar.md` for accepted `row_selector` grammar. The 3 canned patterns above cover the common cases; any expression inside the documented allow-list is accepted. Do not construct arbitrary WHERE clauses from unvalidated user input — rely on the server-side sqlparse-AST validator as the final gate.
 
 - All calls are **sequential**. Do not parallelize — serialization avoids MCP contention.
 - Process all chunks for table 1 before moving to table 2.
