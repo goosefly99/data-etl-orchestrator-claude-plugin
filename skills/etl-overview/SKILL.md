@@ -42,11 +42,13 @@ See `references/preflight-questionnaire.md` for the canonical question spec.
 
 After Stage-0 confirmation is received (Q7 go-ahead), but BEFORE dispatching to any sub-skill:
 
-1. Run the 3 contract probe calls defined in `references/contract-probe-protocol.md`.
+1. Run the 4 contract probe calls defined in `references/contract-probe-protocol.md`.
+   - Probes 1-3 exercise the 3 sibling MCPs individually (kb, yt, x-api).
+   - Probe 4 runs only if probes 1-3 all pass, and asserts the 5 ensemble invariants (envelope shape, unified status vocabulary, kb stderr log shape, silent-DB-failure canary within 100 ms, and `dedup_key` polymorphism) on the same canary call.
 2. If any probe fails, halt immediately and emit the structured error message specified in that document. Do not dispatch to a sub-skill.
 3. If the user said "skip contract probe" during Stage 0, skip this step but log a warning in the deliverable noting that probes were skipped.
 
-See `references/contract-probe-protocol.md` for the full probe spec (tool names, expected responses, and error message format).
+See `references/contract-probe-protocol.md` for the full probe spec (tool names, expected responses, and error message format, including probe-4's 5 assertions and the `kb >= 0.6.0 / yt >= 0.5.0 / x-api >= 0.4.0` version floor).
 
 ---
 
