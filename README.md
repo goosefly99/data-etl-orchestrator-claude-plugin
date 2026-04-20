@@ -44,3 +44,26 @@ Ask for `/etl-overview` any time you want to pull data from one of the supported
 ## Design note
 
 **No MCP tool surface.** This plugin exposes no MCP server and no tool endpoints. The "agents never touch data" constraint is physically enforced — the plugin cannot offer a tool that would let an agent read or write payload bytes. All data movement is MCP-tool-to-MCP-tool via the sibling source MCPs and the agent-knowledgebase.
+
+## Opt-in pre-tool-use hook
+
+A pre-tool-use hook stub ships at `scripts/pre-tool-use-template.sh`. It is a harness-level backstop for the "agents never touch payload bytes" invariant: it inspects the pending tool call and blocks `Read` / `Write` / `Edit` attempts against transcript, tweet-body, article-body, or MCP cache DB paths by exiting with status 2 before the call reaches the model.
+
+**Not registered by default.** Users opt in. To enable:
+
+1. Copy the stub into your project's hooks directory:
+
+   ```bash
+   cp scripts/pre-tool-use-template.sh .claude/hooks/pre-tool-use.sh
+   chmod +x .claude/hooks/pre-tool-use.sh
+   ```
+
+2. Register it in `.claude/settings.json`:
+
+   ```json
+   "hooks": { "PreToolUse": { "command": "path/to/hook" } }
+   ```
+
+3. Customise the deny-list patterns inside the script as your source tree grows.
+
+The plugin does NOT register the hook in `.claude-plugin/plugin.json`. That is deliberate: the hook runs in the user's harness, not inside the plugin surface, and some operators will want to tune it before enabling.
