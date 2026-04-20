@@ -79,11 +79,13 @@ After probes 1-3 pass in isolation, run the ensemble probe on a **shared canary 
 
 Reuse the resources from probes 1-3 so the call is idempotent:
 
-- any known KB id from Probe 1 (for the `kb_pipeline_status` stderr emission path)
+- any known KB id from Probe 1 (for the `kb_ingest_batch` stderr emission path)
 - `videoId='dQw4w9WgXcQ'` from Probe 2 (for the transcript status enum check)
 - any trivially public tweet id from Probe 3 (for the articles envelope check)
 
 Wire these into a single dispatch of the x-api-mcp auto-crawl path that triggers `articleIngestService` and in turn a kb write, then observe both the returned envelope and the captured stderr stream. Schemas referenced below are hosted in `references/mcp-tool-contracts.md` (landed in Phase 3).
+
+For assertion (d), additionally issue a deliberate duplicate-key upsert: call `x_get_tweet(tweet_id='<the tweet_id already fetched in Probe 3>')` a second time within the same run. The tool's internal upsert path will violate the composite PRIMARY KEY on the `tweets` table and emit a SCREAMING_SNAKE_CASE `error_code` on stderr.
 
 ### Assertions (a)-(e)
 
@@ -131,7 +133,7 @@ If any probe fails, the router MUST NOT dispatch to a sub-skill. Instead, emit a
 
 3. `"Contract mismatch detected. x-api-mcp response is missing 'articles' array. Install/upgrade x-api-mcp to version >= 0.4.0 before using this plugin."`
 
-4. Probe-4 (ensemble) failures use the structured template shown in that probe's "Failure message template" section; all four sibling version floors (`kb >= 0.6.0 / yt >= 0.5.0 / x-api >= 0.4.0`) are named together since a probe-4 failure usually indicates at least one sibling is below floor.
+4. Probe-4 (ensemble) failures use the structured template shown in that probe's "Failure message template" section; all three sibling version floors (`kb >= 0.6.0 / yt >= 0.5.0 / x-api >= 0.4.0`) are named together since a probe-4 failure usually indicates at least one sibling is below floor.
 
 The router logs the failure in the deliverable and halts. No partial dispatch is attempted.
 
