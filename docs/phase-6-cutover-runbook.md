@@ -314,10 +314,11 @@ the single source of truth for the Day-7 verdict.
 The rollback clause is quoted verbatim from
 `skills/references/release-gates.md` § "Rollback clause (Phase 6)":
 
-> *"If week-one post-cutover monitoring surfaces any probe-4 regression,
-> the orchestrator tag STAYS at v0.3.0-rc.1 until the regression is
-> patched. Do not advance the public tag to v1.0.x without a clean
-> re-run of probe-4 against the fixed sibling."*
+> If week-one post-cutover monitoring surfaces any probe-4
+> regression — assertion (a), (b), (c), (d), or (e) failing on live user
+> runs — the orchestrator tag STAYS at `v0.3.0-rc.1` (the pre-cutover
+> release-candidate) until a patched v1.0.x ships with the regression
+> closed.
 
 ### Rollback commands
 
