@@ -22,38 +22,40 @@ Last refreshed: 2026-04-20 (Phase 5 — v0.3.0 ecosystem cutover, 16/16 target)
 
 ## Sibling repos
 
-- agent-knowledgebase: `agent_knowledge_base_plugin_dev/` (Python, Stage 1 — ships FIRST)
-- youtube-mcp:         `youtube_dev_api/youtube-mcp-dev/` (TypeScript, Stage 2)
-- x-api-mcp:           `x-api-mcp-dev/` (TypeScript, Stage 2)
+Paths are relative to the orchestrator repo root.
+
+- agent-knowledgebase: `../agent_knowledge_base_plugin_dev/` (Python, Stage 1 — ships FIRST)
+- youtube-mcp:         `../youtube-mcp-dev/` (TypeScript, Stage 2)
+- x-api-mcp:           `../x-api-mcp-dev/` (TypeScript, Stage 2)
 
 ## 16-task status
 
 | Task | Description | Status | Upstream (commit/PR) | Verification |
 |------|-------------|--------|----------------------|--------------|
-| A1   | Expose dedup_key and dedup_policy as first-class metadata fields | [x] | green — agent_knowledge_base_plugin_dev/src/agent_knowledgebase/server.py L108,109,132-140; models.py L117; database.py L42 — ROADMAP L18 [x] verified 2026-04-17 | `rg -n "dedup_key" agent_knowledge_base_plugin_dev/src/` |
-| A2   | Augment kb_list_pages and kb_list_sources with new response fields | [x] | green — models.py L111,121,139-165 (source_type, uri, page_id, source_id); server.py L340-368 docs, L387-398 — ROADMAP L19 [x] verified 2026-04-17 | `rg -n "source_type\|dedup_key\|page_id" agent_knowledge_base_plugin_dev/src/agent_knowledgebase/server.py` |
-| A3   | Per-kb_id serialization via asyncio.Lock (single-process-only) | [x] | green — threading.Lock used (justified in docstring L13); knowledgebase.py L133,134,143-158,312-320 — ROADMAP L20 [x] verified 2026-04-17 | `rg -n "threading.Lock" agent_knowledge_base_plugin_dev/src/agent_knowledgebase/services/knowledgebase.py` |
-| A4   | Record embedding model per page; dominant_embedding_model in kb_info | [x] | green — models.py L96-103; knowledgebase.py L604,607 — ROADMAP L21 [x] verified 2026-04-17 | `rg -n "dominant_embedding_model" agent_knowledge_base_plugin_dev/src/` |
-| A5   | Structured `knowledgebase_stderr_log` helper + per-source ingest routing (v0.6.0) | [x] | green — services/stderr_log.py (single-line JSON stderr emitter); lock diagnostics + ingest-source outcomes routed through helper (kb CHANGELOG v0.6.0 § Added/Changed) — verified 2026-04-20 | `rg -n "knowledgebase_stderr_log" agent_knowledge_base_plugin_dev/src/` |
-| A6   | Expanded `pipeline_runs` telemetry row (9 additive nullable cols) (v0.6.0) | [x] | green — 9 new columns (ended_at, ingested, skipped, replaced, failed, batch_size, dedup_policy, request_id, tool_caller_version); idempotent migration; `kb_pipeline_status(kb_id)` signature preserved — verified 2026-04-20 | `rg -n "ended_at\|tool_caller_version\|request_id" agent_knowledge_base_plugin_dev/src/` |
-| A7   | Cross-process-lock recipe doc (single-process limit + sentinel file recipe) (v0.6.0) | [x] | green — doc ships in kb repo; references `threading.Lock` single-process scope + advisory-lock fallback recipe — verified 2026-04-20 | `test -f agent_knowledge_base_plugin_dev/docs/cross-process-lock.md` (or equivalent) |
-| Y1   | Batch up to 50 videoIds per videos.list call in hydrate path | [x] | green — src/services/videoBatchFetcher.ts L18 BATCH_SIZE=50; L114 chunking loop; L41 batch call — ROADMAP L14 [x] verified 2026-04-17 | `rg -n "BATCH_SIZE\|batch" youtube_dev_api/youtube-mcp-dev/src/services/videoBatchFetcher.ts` |
-| Y2   | Schema migration — additive nullable status columns on videos table | [x] | green — src/db/schema.ts L80-81,83-84,86-87 (metadata_status, transcript_status, transcript_reason); L76-88 idempotent migration — ROADMAP L23 [x] verified 2026-04-17 | `rg -n "metadata_status\|transcript_status" youtube_dev_api/youtube-mcp-dev/src/db/schema.ts` |
-| Y3   | Demote get_transcript to cache-read-only (zero outbound HTTP) | [x] | green — src/tools/get-transcript.ts: no transcriptService or youtube-api imports; L5 imports DB repo only; L47 "ZERO outbound HTTP" — ROADMAP L24 [x] verified 2026-04-17 | `rg -n "transcriptService\|youtube-api" youtube_dev_api/youtube-mcp-dev/src/tools/get-transcript.ts` |
-| Y4   | Defaults includeTranscript=true, hydrate=true; AGENTS.md alignment | [x] | green — get-video-details.ts L144 `.default(true)`; get-playlist-items.ts L56 `hydrate.default(true)`; L19 HYDRATE_TRANSCRIPT_CONCURRENCY=1 — ROADMAP L15 [x] (concurrency pinning) verified 2026-04-17 | `rg -n "default.*true\|includeTranscript\|hydrate" youtube_dev_api/youtube-mcp-dev/src/tools/` |
-| Y5   | Shared `classifyTranscriptError` classifier helper (v0.5.0) | [x] | green — src/services/transcriptClassifier.ts consolidates the two previously duplicated inline matcher blocks (get-video-details.ts + get-playlist-items.ts); narrowed vocabulary: only `no captions`/`captions disabled`/`http 404` route to `missing`; everything else `failed` — verified 2026-04-20 | `rg -n "classifyTranscriptError" youtube-mcp-dev/src/` |
-| Y6   | Hydrate-loop reunify + `channelId` normalization (v0.5.0) | [x] | green — get-playlist-items.ts hydrate loop delegates to `fetchAndStoreVideo(id, true, {preFetchedDetails, source: "get_playlist_items"})`; videos repo writes `video.channelId ?? null` (hardcoded null + multi-line TODO removed); HYDRATE_TRANSCRIPT_CONCURRENCY=1 preserved; `2*ceil(N/50)` quota formula preserved via preFetchedDetails — verified 2026-04-20 | `rg -n "fetchAndStoreVideo\|preFetchedDetails\|channelId" youtube-mcp-dev/src/` |
-| Y7   | Transcript retry-semantics doc + pinned fixture (v0.5.0) | [x] | green — docs/transcript-retry-semantics.md (authoritative retry table, caller retry policy, DB-mapping notes); additive `summary` block on `get_playlist_items` response; pinned fixture test `src/tests/aDWJ6lLemJU.test.ts` — verified 2026-04-20 | `test -f youtube-mcp-dev/docs/transcript-retry-semantics.md && test -f youtube-mcp-dev/src/tests/aDWJ6lLemJU.test.ts` |
-| X0   | Crawler-integration decision doc (blocking gate for X1-X6) | [x] | green — x-api-mcp-dev/docs/crawler-integration-decision.md exists (81 lines); adopts option (a) direct library import — ROADMAP L14 [x] verified 2026-04-17 | `test -f x-api-mcp-dev/docs/crawler-integration-decision.md` |
-| X1   | articleIngestService with concurrency cap of 4 concurrent crawls | [x] | green — services/articleIngestService.ts L25 DEFAULT_CONCURRENCY=4; L101 cap override; L111 new Semaphore(cap) — ROADMAP L15 [x] verified 2026-04-17 | `rg -n "DEFAULT_CONCURRENCY\|Semaphore" x-api-mcp-dev/services/articleIngestService.ts` |
-| X2   | Soft-timeout 15s per article crawl via Promise.race | [x] | green — articleIngestService.ts L26 DEFAULT_TIMEOUT_MS=15_000; L125 Promise.race; L88-91 timeoutResolution() resolves with status=failed,reason=timeout — ROADMAP L16 [x] verified 2026-04-17 | `rg -n "Promise.race\|15_000" x-api-mcp-dev/services/articleIngestService.ts` |
-| X3   | One-to-many tweet_articles join table and articles array envelope | [x] | green — db/schema.ts L149-157 CREATE TABLE tweet_articles (composite PK on tweet_id+article_id) — ROADMAP L17 [x] verified 2026-04-17 | `rg -n "tweet_articles" x-api-mcp-dev/db/schema.ts` |
-| X4   | Wire articles array envelope through all 5 tweet-returning tools | [x] | green — tools/bookmarks.ts L5,L52; search.ts L5,L41; thread.ts L5,L125; tweets.ts L5,L36,L96 (covers x_get_tweet + x_get_user_tweets) all import resolveArticlesForTweets — ROADMAP L18 [x] verified 2026-04-17 | `rg -n "resolveArticlesForTweets" x-api-mcp-dev/tools/` |
-| X5   | Demote x_get_article to cache-read-only (no crawler or X-API calls) | [x] | green — tools/article.ts: zero matches for crawler/xApiService/xApiRequest; L3 imports only DB repo — ROADMAP L20 [x] verified 2026-04-17 | `rg -n "crawler\|xApiService\|xApiRequest" x-api-mcp-dev/tools/article.ts` |
-| X6   | Demote x_crawl_article to manual-override with stderr note | [x] | green — tools/crawl.ts L23 `process.stderr.write('[x_crawl_article] manual override — not called by ingest pipeline\n')` — ROADMAP L20 (shared row with X5) [x] verified 2026-04-17 | `rg -n "manual override" x-api-mcp-dev/tools/crawl.ts` |
-| X7   | Handler-layer `withFailureIsolation` wrapper + metric row (v0.4.0) | [x] | green — services/handlerWrapper.ts `withFailureIsolation<T>(name, tweetCount, fn, opts?)`; soft-timeout race (default 15_000 ms); parent-tweet upsert always runs; structured JSON stderr metric row per call — verified 2026-04-20 | `rg -n "withFailureIsolation\|articles_attempted" x-api-mcp-dev/services/` |
-| X8   | TweetArticlesEnvelope array-shape reconciliation + zod schema (v0.4.0) | [x] | green — envelope is `Array<{ tweetId: string; articles: ArticleResolution[] }>` (no longer Map); `tweetArticlesEnvelopeSchema` zod schema exported from `types.ts`; all 5 tweet-returning handlers updated; `articleResolutionSchema` exported from `services/articleTypes.ts` — verified 2026-04-20 | `rg -n "tweetArticlesEnvelopeSchema\|ArticleResolution\[\]" x-api-mcp-dev/` |
-| X9   | `PLAYWRIGHT_SOFT_TIMEOUT_WIN` canary metric emission (v0.4.0) | [x] | green — services/articleIngestService.ts emits structured stderr JSON on soft-timeout win: `{plugin:'x-api', error_code:'PLAYWRIGHT_SOFT_TIMEOUT_WIN', open_sockets_count, browser_context_id, tweet_id, elapsed_ms}`; `browser_context_id` coarse `ctx-N` counter from `getBrowserContextId()`; test `tests/services/playwright-canary.test.ts` asserts one emission per soft-timeout win, none on clean resolver win — verified 2026-04-20 | `rg -n "PLAYWRIGHT_SOFT_TIMEOUT_WIN\|browser_context_id" x-api-mcp-dev/services/` |
+| A1   | Expose dedup_key and dedup_policy as first-class metadata fields | [x] | green — ../agent_knowledge_base_plugin_dev/src/agent_knowledgebase/server.py L108,109,132-140; models.py L117; database.py L42 — ROADMAP L18 [x] verified 2026-04-17 | `rg -n "dedup_key" ../agent_knowledge_base_plugin_dev/src/` |
+| A2   | Augment kb_list_pages and kb_list_sources with new response fields | [x] | green — models.py L111,121,139-165 (source_type, uri, page_id, source_id); server.py L340-368 docs, L387-398 — ROADMAP L19 [x] verified 2026-04-17 | `rg -n "source_type\|dedup_key\|page_id" ../agent_knowledge_base_plugin_dev/src/agent_knowledgebase/server.py` |
+| A3   | Per-kb_id serialization via asyncio.Lock (single-process-only) | [x] | green — threading.Lock used (justified in docstring L13); knowledgebase.py L133,134,143-158,312-320 — ROADMAP L20 [x] verified 2026-04-17 | `rg -n "threading.Lock" ../agent_knowledge_base_plugin_dev/src/agent_knowledgebase/services/knowledgebase.py` |
+| A4   | Record embedding model per page; dominant_embedding_model in kb_info | [x] | green — models.py L96-103; knowledgebase.py L604,607 — ROADMAP L21 [x] verified 2026-04-17 | `rg -n "dominant_embedding_model" ../agent_knowledge_base_plugin_dev/src/` |
+| A5   | Structured `knowledgebase_stderr_log` helper + per-source ingest routing (v0.6.0) | [x] | green — services/stderr_log.py (single-line JSON stderr emitter); lock diagnostics + ingest-source outcomes routed through helper (kb CHANGELOG v0.6.0 § Added/Changed) — verified 2026-04-20 | `rg -n "knowledgebase_stderr_log" ../agent_knowledge_base_plugin_dev/src/` |
+| A6   | Expanded `pipeline_runs` telemetry row (9 additive nullable cols) (v0.6.0) | [x] | green — 9 new columns (ended_at, ingested, skipped, replaced, failed, batch_size, dedup_policy, request_id, tool_caller_version); idempotent migration; `kb_pipeline_status(kb_id)` signature preserved — verified 2026-04-20 | `rg -n "ended_at\|tool_caller_version\|request_id" ../agent_knowledge_base_plugin_dev/src/` |
+| A7   | Cross-process-lock recipe doc (single-process limit + sentinel file recipe) (v0.6.0) | [x] | green — doc ships in kb repo; references `threading.Lock` single-process scope + advisory-lock fallback recipe — verified 2026-04-20 | `test -f ../agent_knowledge_base_plugin_dev/docs/cross-process-lock-recipe.md` |
+| Y1   | Batch up to 50 videoIds per videos.list call in hydrate path | [x] | green — src/services/videoBatchFetcher.ts L18 BATCH_SIZE=50; L114 chunking loop; L41 batch call — ROADMAP L14 [x] verified 2026-04-17 | `rg -n "BATCH_SIZE\|batch" ../youtube-mcp-dev/src/services/videoBatchFetcher.ts` |
+| Y2   | Schema migration — additive nullable status columns on videos table | [x] | green — src/db/schema.ts L80-81,83-84,86-87 (metadata_status, transcript_status, transcript_reason); L76-88 idempotent migration — ROADMAP L23 [x] verified 2026-04-17 | `rg -n "metadata_status\|transcript_status" ../youtube-mcp-dev/src/db/schema.ts` |
+| Y3   | Demote get_transcript to cache-read-only (zero outbound HTTP) | [x] | green — src/tools/get-transcript.ts: no transcriptService or youtube-api imports; L5 imports DB repo only; L47 "ZERO outbound HTTP" — ROADMAP L24 [x] verified 2026-04-17 | `rg -n "transcriptService\|youtube-api" ../youtube-mcp-dev/src/tools/get-transcript.ts` |
+| Y4   | Defaults includeTranscript=true, hydrate=true; AGENTS.md alignment | [x] | green — get-video-details.ts L144 `.default(true)`; get-playlist-items.ts L56 `hydrate.default(true)`; L19 HYDRATE_TRANSCRIPT_CONCURRENCY=1 — ROADMAP L15 [x] (concurrency pinning) verified 2026-04-17 | `rg -n "default.*true\|includeTranscript\|hydrate" ../youtube-mcp-dev/src/tools/` |
+| Y5   | Shared `classifyTranscriptError` classifier helper (v0.5.0) | [x] | green — src/services/transcriptClassifier.ts consolidates the two previously duplicated inline matcher blocks (get-video-details.ts + get-playlist-items.ts); narrowed vocabulary: only `no captions`/`captions disabled`/`http 404` route to `missing`; everything else `failed` — verified 2026-04-20 | `rg -n "classifyTranscriptError" ../youtube-mcp-dev/src/` |
+| Y6   | Hydrate-loop reunify + `channelId` normalization (v0.5.0) | [x] | green — get-playlist-items.ts hydrate loop delegates to `fetchAndStoreVideo(id, true, {preFetchedDetails, source: "get_playlist_items"})`; videos repo writes `video.channelId ?? null` (hardcoded null + multi-line TODO removed); HYDRATE_TRANSCRIPT_CONCURRENCY=1 preserved; `2*ceil(N/50)` quota formula preserved via preFetchedDetails — verified 2026-04-20 | `rg -n "fetchAndStoreVideo\|preFetchedDetails\|channelId" ../youtube-mcp-dev/src/` |
+| Y7   | Transcript retry-semantics doc + pinned fixture (v0.5.0) | [x] | green — docs/transcript-retry-semantics.md (authoritative retry table, caller retry policy, DB-mapping notes); additive `summary` block on `get_playlist_items` response; pinned fixture test `src/tests/aDWJ6lLemJU.test.ts` — verified 2026-04-20 | `test -f ../youtube-mcp-dev/docs/transcript-retry-semantics.md && test -f ../youtube-mcp-dev/src/tests/aDWJ6lLemJU.test.ts` |
+| X0   | Crawler-integration decision doc (blocking gate for X1-X6) | [x] | green — ../x-api-mcp-dev/docs/crawler-integration-decision.md exists (81 lines); adopts option (a) direct library import — ROADMAP L14 [x] verified 2026-04-17 | `test -f ../x-api-mcp-dev/docs/crawler-integration-decision.md` |
+| X1   | articleIngestService with concurrency cap of 4 concurrent crawls | [x] | green — services/articleIngestService.ts L25 DEFAULT_CONCURRENCY=4; L101 cap override; L111 new Semaphore(cap) — ROADMAP L15 [x] verified 2026-04-17 | `rg -n "DEFAULT_CONCURRENCY\|Semaphore" ../x-api-mcp-dev/services/articleIngestService.ts` |
+| X2   | Soft-timeout 15s per article crawl via Promise.race | [x] | green — articleIngestService.ts L26 DEFAULT_TIMEOUT_MS=15_000; L125 Promise.race; L88-91 timeoutResolution() resolves with status=failed,reason=timeout — ROADMAP L16 [x] verified 2026-04-17 | `rg -n "Promise.race\|15_000" ../x-api-mcp-dev/services/articleIngestService.ts` |
+| X3   | One-to-many tweet_articles join table and articles array envelope | [x] | green — db/schema.ts L149-157 CREATE TABLE tweet_articles (composite PK on tweet_id+article_id) — ROADMAP L17 [x] verified 2026-04-17 | `rg -n "tweet_articles" ../x-api-mcp-dev/db/schema.ts` |
+| X4   | Wire articles array envelope through all 5 tweet-returning tools | [x] | green — tools/bookmarks.ts L5,L52; search.ts L5,L41; thread.ts L5,L125; tweets.ts L5,L36,L96 (covers x_get_tweet + x_get_user_tweets) all import resolveArticlesForTweets — ROADMAP L18 [x] verified 2026-04-17 | `rg -n "resolveArticlesForTweets" ../x-api-mcp-dev/tools/` |
+| X5   | Demote x_get_article to cache-read-only (no crawler or X-API calls) | [x] | green — tools/article.ts: zero matches for crawler/xApiService/xApiRequest; L3 imports only DB repo — ROADMAP L20 [x] verified 2026-04-17 | `rg -n "crawler\|xApiService\|xApiRequest" ../x-api-mcp-dev/tools/article.ts` |
+| X6   | Demote x_crawl_article to manual-override with stderr note | [x] | green — tools/crawl.ts L23 `process.stderr.write('[x_crawl_article] manual override — not called by ingest pipeline\n')` — ROADMAP L20 (shared row with X5) [x] verified 2026-04-17 | `rg -n "manual override" ../x-api-mcp-dev/tools/crawl.ts` |
+| X7   | Handler-layer `withFailureIsolation` wrapper + metric row (v0.4.0) | [x] | green — services/handlerWrapper.ts `withFailureIsolation<T>(name, tweetCount, fn, opts?)`; soft-timeout race (default 15_000 ms); parent-tweet upsert always runs; structured JSON stderr metric row per call — verified 2026-04-20 | `rg -n "withFailureIsolation\|articles_attempted" ../x-api-mcp-dev/services/` |
+| X8   | TweetArticlesEnvelope array-shape reconciliation + zod schema (v0.4.0) | [x] | green — envelope is `Array<{ tweetId: string; articles: ArticleResolution[] }>` (no longer Map); `tweetArticlesEnvelopeSchema` zod schema exported from `types.ts`; all 5 tweet-returning handlers updated; `articleResolutionSchema` exported from `services/articleTypes.ts` — verified 2026-04-20 | `rg -n "tweetArticlesEnvelopeSchema\|ArticleResolution\[\]" ../x-api-mcp-dev/` |
+| X9   | `PLAYWRIGHT_SOFT_TIMEOUT_WIN` canary metric emission (v0.4.0) | [x] | green — services/articleIngestService.ts emits structured stderr JSON on soft-timeout win: `{plugin:'x-api', error_code:'PLAYWRIGHT_SOFT_TIMEOUT_WIN', open_sockets_count, browser_context_id, tweet_id, elapsed_ms}`; `browser_context_id` coarse `ctx-N` counter from `getBrowserContextId()`; test `tests/services/playwright-canary.test.ts` asserts one emission per soft-timeout win, none on clean resolver win — verified 2026-04-20 | `rg -n "PLAYWRIGHT_SOFT_TIMEOUT_WIN\|browser_context_id" ../x-api-mcp-dev/services/` |
 | E1   | Ensemble contract-probe (probe 4) — envelope zod, unified status vocab, stderr shape, silent-DB-failure canary, dedup_key polymorphism | [x] | green — `skills/references/contract-probe-protocol.md` Probe 4 lands 5 assertions (a-e) on a shared canary call; 100 ms stderr deadline on assertion (d) turns silent-DB failure into surfaced failure; failure template names kb/yt/x-api version floors; version-floor line `kb >= 0.6.0 / yt >= 0.5.0 / x-api >= 0.4.0` (Phase 4, commits dd7dc51 + 6d37626) — verified 2026-04-20 | `rg -n "Probe 4\|ensemble-contract" skills/references/contract-probe-protocol.md` |
 
 ## Aggregate status
@@ -70,10 +72,13 @@ Last refreshed: 2026-04-20 (Phase 5 — v0.3.0 ecosystem cutover, 16/16 target)
 | Ensemble probe (E1)         | 1 | 0 | 0 | 1 |
 | **Total**                   | **16** | **0** | **0** | **16** |
 
-Note: the 25 rows above (A1-A7 + Y1-Y7 + X0-X9 + E1) collapse to 16 distinct
-release-gate tasks because X5/X6 share a single ROADMAP line (both demotion
-items covered by one check). The 16/16 count reflects distinct sibling
-release-gate tasks; the row count here exposes per-item evidence.
+Note: the grid contains 25 rows (A1-A7 + Y1-Y7 + X0-X9 + E1) but the
+release-gate headline is 16/16. The 16 reflects the pre-Phase-5 gate
+scope (A1-A4 + Y1-Y4 + X0-X6 = 15 original tasks, plus E1 the new
+ensemble probe). The 9 rows added in Phase 5 (A5-A7, Y5-Y7, X7-X9)
+are v0.3.0 implementation tasks tracked here for completeness but
+counted separately from the 16 gate tasks. All 25 rows are green;
+the 16/16 gate count is met.
 
 ### Release order reminder
 
@@ -171,6 +176,16 @@ available, run the fallback checklist manually:
 
 Fallback completion is equivalent to the script exiting 0.
 
+## Pre-tag checklist (Phase 6)
+
+Before cutting the orchestrator v1.0.0 tag, confirm each item in the same
+commit as the tag (or immediately preceding):
+
+- [ ] Bump `.claude-plugin/plugin.json` version from `0.2.0` to `1.0.0` in the same commit as the v1.0.0 tag (or immediately preceding).
+- [ ] `scripts/verify-marketplace-resolution.sh` exits 0 (or the manual fallback above is logged in `cron-log.md`).
+- [ ] `CHANGELOG.md` v1.0.0 section is promoted out of `Unreleased` with the tag date.
+- [ ] Install-order cross-check (six `rg` probes above) all return at least one hit.
+
 ## Rollback clause (Phase 6)
 
 **Trigger.** If week-one post-cutover monitoring surfaces any probe-4
@@ -235,9 +250,9 @@ All 15 original items re-verified 2026-04-17 by parallel Explore subagents
 Sibling ROADMAP checkboxes flipped `[ ] → [x]` on the following lines after
 verification (2026-04-17 baseline preserved):
 
-- `agent_knowledge_base_plugin_dev/ROADMAP.md` L18, L19, L20, L21 (A1-A4)
-- `youtube_dev_api/youtube-mcp-dev/ROADMAP.md` L14, L15, L23, L24 (Y1-Y4)
-- `x-api-mcp-dev/ROADMAP.md` L14, L15, L16, L17, L18, L20 (X0-X6)
+- `../agent_knowledge_base_plugin_dev/ROADMAP.md` L18, L19, L20, L21 (A1-A4)
+- `../youtube-mcp-dev/ROADMAP.md` L14, L15, L23, L24 (Y1-Y4)
+- `../x-api-mcp-dev/ROADMAP.md` L14, L15, L16, L17, L18, L20 (X0-X6)
 
 No partial-publish exception taken — all sibling code was already shipped;
 this refresh closed a documentation-sync gap between verified implementation

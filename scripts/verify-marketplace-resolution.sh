@@ -77,6 +77,8 @@ query_marketplace() {
   # the `claude plugin query` CLI (or equivalent) is confirmed. Current
   # placeholder prints UNRESOLVED so every call fails until wired up.
   if command -v claude >/dev/null 2>&1; then
+    # NOTE: all CLI failures (auth, bad flags, network, missing plugin) echo UNRESOLVED.
+    # If the gate fails unexpectedly, re-run with `claude plugin query ...` directly to see the actual exit code and message.
     claude plugin query \
       --marketplace "$MARKETPLACE" \
       --plugin "$plugin" \

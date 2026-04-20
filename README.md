@@ -37,6 +37,15 @@ Install via the `goosefly99-plugins-auto-dev` marketplace in this order:
 
 The ETL orchestrator runs a contract probe on first use to verify all sibling plugins are at compatible versions. See `skills/references/contract-probe-protocol.md`.
 
+## v1.0.0 ecosystem gate (observable behavior)
+
+The orchestrator v1.0.0 release runs a 4-probe contract check at preflight against the sibling MCPs:
+- `agent-knowledgebase >= 0.6.0`
+- `youtube-mcp >= 0.5.0`
+- `x-api-mcp >= 0.4.0`
+
+If any sibling is older than its floor, the orchestrator halts preflight with a structured upgrade message. The 4th (ensemble) probe additionally verifies envelope shapes, status enums, stderr log format, duplicate-PK canary, and dedup-key polymorphism. See `skills/references/contract-probe-protocol.md` for the full probe definition and `skills/references/release-gates.md` for the 16/16 gate status.
+
 ## When to invoke
 
 Ask for `/etl-overview` any time you want to pull data from one of the supported sources into a knowledgebase. The router handles the rest.
