@@ -6,7 +6,10 @@ project ships as a skills-only Claude Code plugin (Markdown + JSON +
 optional Bash), so "changes" are almost exclusively documentation and
 harness surface — there is no runtime code to semver.
 
-## [1.0.0] — Unreleased (pending Phase 6 monitoring + rollback verdict)
+## [1.0.0] — 2026-04-20 (ecosystem release)
+
+*Tag lands after sibling v0.6.0/v0.5.0/v0.4.0 tags resolve in marketplace.
+Rollback floor: v0.3.0-rc.1 (see release-gates.md rollback clause).*
 
 Ecosystem cutover from the 2026-04 v0.2.0 baseline to v1.0.0, landing
 alongside the sibling v0.3.0 drop (agent-knowledgebase v0.6.0,
