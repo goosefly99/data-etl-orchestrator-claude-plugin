@@ -77,10 +77,10 @@ Plugin type: skills-only Claude Code plugin (no MCP server, no MCP tool surface)
 
 ## Recommended changes (ship if feasible)
 
-- [ ] Pre-tool-use hook template stub under `scripts/` that blocks `Write` on `*.transcript`, `*.tweet`, `*.article` paths and `Read` on known MCP cache DB filenames.
-- [ ] A `skills/references/stage-0-defaults.md` note on how the slash-command reuses the last confirmed plan (YAML file under `.claude/etl-orchestrator/last-plan.yaml`).
-- [ ] Verify `AskUserQuestion` actually supports "up to 4 questions per call" as claimed in `preflight-questionnaire.md` line 104. If not, fix the grouping advice.
-- [ ] Verify `get_saved_videos` actually supports a `source` parameter for column filtering (used in `ingest-youtube-playlist` Stage 2). If the tool only supports keyword `query`, update the skill to use the correct parameter name.
+- [x] Pre-tool-use hook template stub under `scripts/` that blocks `Write` on `*.transcript`, `*.tweet`, `*.article` paths and `Read` on known MCP cache DB filenames. _(Phase 3, opt-in; see README "Opt-in pre-tool-use hook" and scripts/pre-tool-use-template.sh)_
+- [x] A `skills/references/stage-0-defaults.md` note on how the slash-command reuses the last confirmed plan (YAML file under `.claude/etl-orchestrator/last-plan.yaml`). _(Phase 3)_
+- [x] Verify `AskUserQuestion` actually supports "up to 4 questions per call" as claimed in `preflight-questionnaire.md` line 104. If not, fix the grouping advice. _(Phase 0, report at docs/phase-0-askuserquestion-verification.md — limit intact: 1-4 questions per call, no cascade edits needed. Re-stated in stage-0-defaults.md.)_
+- [x] Verify `get_saved_videos` actually supports a `source` parameter for column filtering (used in `ingest-youtube-playlist` Stage 2). If the tool only supports keyword `query`, update the skill to use the correct parameter name. _(Phase 3 — verified against youtube-mcp-dev/src/tools/get-saved-videos.ts; `source` is an optional string parameter with documented values including `playlist_items`. No skill edit required.)_
 
 ## Accepted as-is
 
