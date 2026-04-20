@@ -44,6 +44,7 @@ Scope note: S1-S12 are checks on *skill body content* (the SKILL.md files and th
 | S10 | `sha256sum` (Windows-incompatible CLI) | 0 hits outside a `# Linux/macOS` label | CON-3 permits `sha256sum` inside an explicit `# Linux/macOS` block after Windows (`Get-FileHash`/`certutil`) primary guidance; exclude `references/bug-closure.md` and `references/phase-8-review-checklist.md` |
 | S11 | `x-article.*canonical URL` (v0.1.0 spec error SE-2) | 0 | polymorphic id required per C5; exclude `references/phase-8-review-checklist.md` (documents the forbidden pattern) and `references/phase-8-dry-run-report.md` (assertion labels) |
 | S12 | Stage-0 echo inlined | the literal Stage-0 echo template appears only in `references/deliverable-format.md` | the phrase "Stage-0 echo" (as an assertion/section label) may appear in `references/phase-8-review-checklist.md` and `references/phase-8-dry-run-report.md`; C3 enforces single source for the *template body* |
+| SN-legacy-grammar-warning | `until.*safe-where-clause-grammar.*ships` | 0 | self-documenting hits in `references/phase-8-review-checklist.md` (this file defines the pattern) are excluded via `$HX`. Run: `rg 'until.*safe-where-clause-grammar.*ships' skills/ $HX` — expect zero hits |
 
 Shell form (copy-paste for a fresh operator):
 
@@ -69,6 +70,9 @@ echo "S10"; ! rg -nqU 'sha256sum' $R $HX
 echo "S11"; ! rg -nq 'x-article.*canonical URL' $R $HX
 # S12: the Stage-0 echo *template* appears only in deliverable-format.md. Label-only mentions in harness docs are allowed.
 echo "S12"; test "$(rg -c 'Stage-0 echo' $R $HX | grep -v deliverable-format.md | wc -l)" -eq 0
+# SN-legacy-grammar-warning: the pre-Phase-1 "until ... safe-where-clause-grammar.md ships" gating prose is retired.
+# This file necessarily defines the pattern, so exclude via $HX.
+echo "SN-legacy-grammar-warning"; ! rg -nq 'until.*safe-where-clause-grammar.*ships' $R $HX
 echo "ALL STATIC CHECKS PASS"
 ```
 
