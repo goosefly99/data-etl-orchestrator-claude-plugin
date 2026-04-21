@@ -63,7 +63,7 @@ echo "S2" ; ! rg -nq 'Read\(.*\.txt\)' $R
 echo "S3" ; ! rg -nq 'Read\(.*\.json\)' $R
 echo "S4" ; ! rg -nq 'Write\(.*summary.*\.md\)' $R
 echo "S5" ; ! rg -nq 'Write\(.*transcript.*\)' $R
-echo "S6" ; ! rg -nq 'source_type\s*=\s*(?!sql_database)' $R
+echo "S6" ; ! rg -nqP 'source_type\s*=\s*(?!sql_database)' $R  # -P: negative lookahead requires PCRE2
 echo "S7" ; ! rg -nq '^\s*article:\s' $R      # YAML-key form only; allows prose "article:" in sentences
 echo "S8" ; ! rg -nq '^\s*where:\s' $R        # YAML-key form only
 # S9: status-comparison only — not prose adjectives. Exclude harness docs + schema doc.
