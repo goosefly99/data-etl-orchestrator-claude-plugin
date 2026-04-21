@@ -16,6 +16,18 @@ Stage 0 is a mandatory gate. No MCP data tool may be called until all seven ques
   - Collect `name` (human-readable), `description` (one sentence).
   - Ask: "Create a memory pointer for this KB?" (default: yes).
 
+### Stale memory-pointer handling
+
+After reading a pointer file at `memory/kb_<slug>.md`, ALWAYS call `kb_info(stored_id)` before using the id. No exception, even if the id "looks right".
+
+- On `kb_info` returning "not found" (or the name field disagreeing with the pointer file): call `kb_list()` and re-match by name (case-insensitive, trim whitespace).
+- On exactly-one match: propose two options to the user:
+  a) **Prune** the stale entry from `MEMORY.md` and rewrite the pointer file (`memory/kb_<slug>.md`) with the new id + current ISO date in `Last verified`.
+  b) **Abort** Stage 0 and let the user fix the pointer manually.
+- On multiple matches or no match: present the list (or the empty state) to the user and ask which KB to use, or offer to create a new one.
+
+Full protocol in `kb-memory-pointer-protocol.md` § Stale-pointer recovery flow.
+
 ---
 
 ## Question 2: Source(s)
@@ -106,6 +118,84 @@ Echo the resolved plan as a single block before asking for approval. Include:
 Ask: "Proceed with this plan? (yes / no / edit)"
 
 Do not invoke any Stage 1 tool until the user replies "yes".
+
+---
+
+## Stage-0 warmup (pre-Q1 environment check)
+
+Before Q1, run the following environment probes. All are read-only and
+out-of-band — they do not write to any KB or source DB.
+
+### 1. Embedder reachability (FIELD-11 interim)
+
+Run `scripts/check-embedder.sh` (Linux / macOS / WSL) or
+`scripts/check-embedder.ps1` (Windows PowerShell). Expect a JSON
+response of shape `{"up": true, "latency_ms": N, "endpoint": "..."}`.
+
+If the script exits non-zero or reports `"up": false`, halt Stage 0
+and instruct the user to start the embedder (e.g., `ollama serve` or
+the configured OpenAI endpoint) before proceeding.
+
+> **Temporary stopgap.** This script is replaced by a sibling
+> `kb_embedder_health` tool in agent-knowledgebase v0.7.0; once that
+> lands, this step becomes a single `kb_embedder_health` call.
+
+### 2. Ollama cold-start warmup (FIELD-6 interim)
+
+If the configured embedder is a local Ollama model, run one warmup
+request out-of-band so the first real `kb_query` or `kb_ingest_batch`
+does not pay the 30-35-minute cold-model-load cost silently:
+
+```bash
+ollama run qwen3-embedding:8b "hello"
+```
+
+Substitute the configured model name if different. State clearly to
+the user that cold starts are silent and can take tens of minutes;
+skipping this step turns the first query into an unrecoverable wait.
+
+### 3. Routing canary (FIELD-2 interim, replaces `kb_config_show scope=env`)
+
+`kb_config_show scope=env` currently returns `{}` because the server
+does not echo inherited env vars. Replace this check with a
+single-source `kb_ingest_batch` call using a WHERE clause that
+matches no rows (`row_selector="1=0"`). This exercises the routing
+path without triggering any embed, and the returned source metadata
+reveals which provider was selected.
+
+Invoke:
+
+```json
+{
+  "kb_id": "<target kb_id>",
+  "sources": [{
+    "source_type": "sql_database",
+    "uri": "sqlite:///<any populated source DB>",
+    "metadata": {
+      "table": "<any real table in the DB>",
+      "row_selector": "1=0",
+      "kb_source_label": "stage-0:routing-canary"
+    }
+  }]
+}
+```
+
+Inspect the response for the embedder / provider field. Halt Stage-0
+if the provider does not match the Stage-0 Q6 selection.
+
+> **Temporary stopgap.** Once agent-knowledgebase v0.7.0 extends
+> `kb_config_show scope=env` to echo inherited env vars, this canary
+> is replaced by the original `kb_config_show` check.
+
+### 4. Retrieval-flow gate (FIELD-14 interim)
+
+If the run being planned is retrieval-heavy (any `kb_query` /
+`kb_search` expected before or after ingest — e.g., the ETL caller
+is chaining a query step), the probes above MUST pass before Q1
+proceeds. Silent-blocking `kb_query` hangs (30-minute observed
+waits) are avoided by short-circuiting Stage-0 on an unreachable
+embedder rather than letting `kb_query` hang. Sibling timeout +
+progress-event support lands in agent-knowledgebase v0.7.0.
 
 ---
 

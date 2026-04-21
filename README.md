@@ -37,6 +37,17 @@ Install via the `goosefly99-plugins-auto-dev` marketplace in this order:
 
 The ETL orchestrator runs a contract probe on first use to verify all sibling plugins are at compatible versions. See `skills/references/contract-probe-protocol.md`.
 
+### Dependency-change warning
+
+**Do not run `uv sync --directory <plugin_path>` mid-session.** It rewrites
+the plugin's venv and terminates any Python process rooted in it —
+including a live MCP server subprocess. Run plugin dependency changes
+BEFORE session start.
+
+If mid-session changes are unavoidable, follow the pause protocol in
+`skills/references/session-hygiene.md`: `/mcp disconnect` → `uv sync` →
+`/mcp reconnect`, then re-validate KB state.
+
 ## v1.0.0 ecosystem gate (observable behavior)
 
 The orchestrator v1.0.0 release runs a 4-probe contract check at preflight against the sibling MCPs:

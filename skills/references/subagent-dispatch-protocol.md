@@ -98,3 +98,92 @@ If the subagent fails outright (crash, timeout, context overflow) or reports par
 3. The follow-up subagent receives only the IDs that failed or were not attempted.
 4. The parent logs the failure in the deliverable with the subagent's error output (if any).
 5. If two consecutive subagent dispatches fail on the same chunk, the parent escalates to the user rather than retrying indefinitely.
+
+---
+
+## Parallel-subagent boundary (FIELD-8)
+
+`kb_ingest_batch` calls are sequential **within a single subagent** to
+avoid MCP contention at the agent-knowledgebase per-`kb_id` write
+lock. They are NOT absolutely forbidden across subagents. The
+parallelism boundary is **scope disjointness**:
+
+- **Safe:** two subagents each dispatched with a disjoint ID-list
+  chunk of the same staging DB (e.g., subagent A gets
+  `video_id IN ('a','b','c')`, subagent B gets
+  `video_id IN ('d','e','f')`). Their `row_selector` values match
+  no overlapping rows, so the server's per-`kb_id` write lock
+  queues them harmlessly.
+- **Safe:** two subagents targeting different `kb_id`s in parallel.
+  The per-`kb_id` lock does not serialize across KBs.
+- **Not safe:** two subagents with overlapping ID lists and
+  `dedup_policy = "force-add"`. The KB will contain duplicate
+  source records and retrieval will return correlated duplicates.
+- **Not safe without coordination:** overlapping ID lists under
+  `re-ingest`. The second subagent's insert overwrites the first's,
+  but both runs pay the embed cost and the order of final state is
+  not deterministic.
+
+Worked example of a safe parallel dispatch:
+
+```
+Subagent A:
+  kb_id       = <shared kb_id>
+  tables      = { "videos": ["vid_001", ..., "vid_200"] }
+  kb_source_label = "load-kb-from-sql:playlist-A:batch-1"
+  row_selector    = "video_id IN (<200 ids>)"
+
+Subagent B (dispatched in parallel):
+  kb_id       = <shared kb_id>
+  tables      = { "videos": ["vid_201", ..., "vid_400"] }
+  kb_source_label = "load-kb-from-sql:playlist-A:batch-2"
+  row_selector    = "video_id IN (<different 200 ids>)"
+```
+
+The two ID lists are disjoint. The agent-knowledgebase per-`kb_id`
+lock queues the two subagents' `kb_ingest_batch` calls without data
+corruption.
+
+Counter-example of an unsafe parallel dispatch:
+
+```
+Subagent A: row_selector = "saved_at >= '2026-01-01'", dedup_policy = "force-add"
+Subagent B: row_selector = "author_id = '12345'",      dedup_policy = "force-add"
+```
+
+If any row matches both predicates, it is ingested twice with
+`force-add` — duplicate KB sources with duplicate embeddings.
+Disjointness must be provable from the `row_selector` expressions,
+not just "probably disjoint".
+
+The parent agent is responsible for proving disjointness before
+dispatching parallel subagents. When in doubt, prefer sequential.
+
+---
+
+## Concurrent KB-query cost (FIELD-14 interim)
+
+Parallel subagents doing RETRIEVAL (`kb_query` / `kb_search`) on
+the same KB are NOT free. When the embedder is a single-GPU Ollama
+backend, embed requests serialize at the embedder — N concurrent
+`kb_query` calls each pay the full serialized embed latency and
+amplify wall-clock time instead of reducing it. Observed: 4
+concurrent `kb_query` calls against a shared KB blocked the full
+RPC window for ~30 min with no tool results delivered.
+
+Caller-side contract (interim):
+
+- Prefer sequential retrieval inside a single subagent unless the
+  embedder backend is known to be parallel-safe (e.g., multi-GPU
+  or a hosted embedding API with sufficient concurrency).
+- For CPU-bound fast backends (small local models, or an OpenAI-
+  style hosted endpoint with generous rate limits), parallel
+  retrieval is fine — but validate with a cold-run benchmark
+  before committing.
+- Ingest parallelism (FIELD-8 § Parallel-subagent boundary above)
+  is orthogonal — disjoint-scope ingest subagents remain safe to
+  run in parallel regardless of retrieval backend characteristics.
+
+Once agent-knowledgebase v0.7.0 ships a backend-parallelism
+contract (serialized-at-embedder vs parallel-safe), this section is
+replaced with a hard rule referencing that contract.

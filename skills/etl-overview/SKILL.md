@@ -32,6 +32,15 @@ Issue ALL questions via `AskUserQuestion` before touching any data tool. Do not 
 6. **Embeddings model** — Which embeddings model endpoint to use for the KB records if the default ollama embeddings model is not available?
 7. **Confirmation** — Echo the resolved plan (source, item count estimate, target KB, DB path, granularity, dedup policy, embeddings model). Ask for explicit go-ahead.
 
+**Stage-0 warmup (pre-Q1).** Before Q1, run the 4 pre-Q1 environment
+probes documented in `references/preflight-questionnaire.md` §
+Stage-0 warmup: (1) embedder reachability via
+`scripts/check-embedder.{sh,ps1}`; (2) Ollama cold-start warmup for
+local embedders; (3) routing canary (`row_selector="1=0"` single-
+source `kb_ingest_batch`) in lieu of the uninformative
+`kb_config_show scope=env`; (4) retrieval-flow gate for runs that
+will call `kb_query`/`kb_search`. Halt Stage-0 on any probe failure.
+
 Block all Stage 1+ operations until the go-ahead is received.
 
 See `references/preflight-questionnaire.md` for the canonical question spec.

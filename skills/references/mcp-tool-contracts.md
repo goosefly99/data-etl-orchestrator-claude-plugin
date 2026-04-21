@@ -157,3 +157,45 @@ See `docs/transcript-retry-semantics.md` (ships in youtube-mcp v0.5.0).
 ## Drift prevention
 
 Before implementing any change to a SKILL.md that references a tool signature, verify the signature against this document. If the source MCP has been updated and this document is stale, update this document first (with justification), then update the SKILL.md files in a separate commit.
+
+---
+
+## Known runtime hazard: `kb_query` / `kb_search` silent blocking (FIELD-14, interim)
+
+Until agent-knowledgebase v0.7.0 lands with bounded timeouts and
+progress events, both `kb_query` and `kb_search` can block the RPC
+indefinitely when the embedder is cold, serialized on single-GPU
+Ollama, or unreachable. Observed blocking windows: 30+ minutes with
+no tool result delivered. This starves the agent loop and compounds
+with FIELD-9 (interrupt tears down the MCP server entirely).
+
+**Caller-side contract (interim):**
+
+- Run the Stage-0 embedder-health probe
+  (`scripts/check-embedder.{sh,ps1}`) before any retrieval call.
+- Bound your own wall-clock budget for retrieval calls; escalate to
+  the recovery recipe in `session-hygiene.md` if the budget expires.
+- Parallel `kb_query` calls against the same KB are NOT free on a
+  single-GPU Ollama backend — the embedder serializes, and each
+  concurrent call pays the full serialized latency. See
+  `subagent-dispatch-protocol.md` § Concurrent KB-query cost.
+- Prefer sequential retrieval inside a single subagent unless the
+  embedder backend is known to be parallel-safe.
+
+**Sibling-side fix (tracked for v0.7.0):**
+
+- Bounded server-side embed timeout with a structured error
+  `{"error":"embed_timeout","model":...,"phase":"embed_query","latency_ms":...}`.
+- Progress / heartbeat events distinguishing `embed_query`,
+  `ann_search`, and `hydrate_chunks` phases.
+- Internal embedder preflight that short-circuits when the embedder
+  is unreachable.
+- Interrupt semantics that cancel the in-flight embed without
+  killing the MCP server (coordinates with FIELD-9).
+- A documented backend-parallelism contract (serialized-at-embedder
+  vs parallel-safe) so `subagent-dispatch-protocol.md` can pin an
+  accurate concurrency rule.
+
+Once v0.7.0 lands, this section is deleted and the relevant
+contract details are pinned in the kb_query / kb_search sub-section
+of the agent-knowledgebase contract block above.

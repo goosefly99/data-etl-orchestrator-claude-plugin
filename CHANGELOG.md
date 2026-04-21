@@ -6,6 +6,118 @@ project ships as a skills-only Claude Code plugin (Markdown + JSON +
 optional Bash), so "changes" are almost exclusively documentation and
 harness surface — there is no runtime code to semver.
 
+## [1.1.0] — 2026-04-21 (plugin-side field-notes patch)
+
+*Patch release on top of v1.0.0. All changes are plugin-side documentation
+and skill edits plus three stdlib-only helper scripts; the sibling version
+floor is unchanged (`kb >= 0.6.0 / yt >= 0.5.0 / x-api >= 0.4.0`), so
+this unblocks users today without re-running the v1.0.0 ecosystem cutover.
+Five findings (FIELD-1, FIELD-2 final, FIELD-3 final, FIELD-5, FIELD-6
+final, FIELD-7, FIELD-11 final, FIELD-12 final, FIELD-14 final) require
+sibling-MCP changes to fully close and are tracked for v1.2.0, gated on
+`agent-knowledgebase v0.7.0`. FIELD-9 is a priority debug item; the
+investigation spike with symptom, repro plan, localization hypotheses,
+proposed fix shape, exit criteria, and regression guard is landed in
+`docs/field-9-repro.md`.*
+
+### Added
+
+- **FIELD-2 interim** — routing-canary (`row_selector="1=0"`) Stage-0
+  probe in `skills/references/preflight-questionnaire.md` replaces the
+  uninformative `kb_config_show scope=env` check. Confirms the MCP routing
+  path is live before any real ingest rows are committed.
+- **FIELD-3 interim** — "Cleanup pass (FIELD-3 interim)" section in
+  `skills/load-kb-from-sql/SKILL.md` documents the `status: "failed",
+  chunk_count: 0` silent-data-loss hazard and the `kb_list_sources` /
+  `kb_remove_source` retry sequence. Companion "Failure-state semantics"
+  section added to `skills/references/idempotency-and-dedup.md` with
+  explicit prune-and-retry recipe.
+- **FIELD-4** — "Dependency-change warning" subsection in `README.md`
+  and `uv sync` pause protocol in NEW `skills/references/session-hygiene.md`.
+  Describes safe mid-session reconnect flow: `/mcp disconnect` → `uv sync`
+  → `/mcp connect`.
+- **FIELD-6 interim** — Ollama cold-start warmup step added to Stage-0
+  in `skills/references/preflight-questionnaire.md`; issues a throwaway
+  `ollama run qwen3-embedding:8b "hello"` call before the first real
+  embedding request to avoid silent first-batch timeout.
+- **FIELD-8** — Parallelism rule reconciled from absolute-form "Do not
+  parallelize" to "All `kb_ingest_batch` calls within a single subagent
+  are sequential"; NEW `skills/references/subagent-dispatch-protocol.md`
+  § "Parallel-subagent boundary" documents the disjoint-scope rule with
+  worked safe and unsafe examples.
+- **FIELD-9 (priority)** — Investigation spike in NEW `docs/field-9-repro.md`
+  (symptom, repro plan, localization hypotheses, proposed fix shape, exit
+  criteria, regression guard). Plugin-side recovery recipe in NEW
+  `skills/references/session-hygiene.md`.
+- **FIELD-10** — `kb_info` liveness check + stale-pointer prune/abort
+  branch added to `skills/references/preflight-questionnaire.md` Q1;
+  new step 6 ("Prune-or-abort user prompt") added to
+  `skills/references/kb-memory-pointer-protocol.md` § "Stale-pointer
+  recovery flow".
+- **FIELD-11 interim** — NEW `scripts/check-embedder.sh` and
+  `scripts/check-embedder.ps1` (stdlib-only embedder health probes);
+  Stage-0 probe step added to
+  `skills/references/preflight-questionnaire.md`.
+- **FIELD-12 interim** — NEW `scripts/build_staging_db_template.py`
+  (stdlib-only staging DB template builder with no external dependencies).
+- **FIELD-13** — Memory pointer emission auto-template in
+  `skills/load-kb-from-sql/SKILL.md` replaces the hand-substitution step;
+  grep-audited so no `<new_kb_id>` literal placeholders survive in
+  `skills/`.
+- **FIELD-14 interim** — Silent-blocking hazard section added to
+  `skills/references/mcp-tool-contracts.md`; "Concurrent KB-query cost"
+  section added to `skills/references/subagent-dispatch-protocol.md`;
+  retrieval-flow embedder-health gate added to
+  `skills/references/preflight-questionnaire.md`.
+
+### Changed
+
+- `skills/load-kb-from-sql/SKILL.md` "Memory pointer update" section
+  renamed to "Memory pointer emission (FIELD-13)" and now auto-emits the
+  pointer file rather than requiring hand-substitution of `<new_kb_id>`.
+- `skills/references/kb-memory-pointer-protocol.md` Stale-pointer recovery
+  flow gains step 6 (prune/abort user-prompt); former steps 6 and 7
+  renumbered to 7 and 8.
+- `skills/load-kb-from-sql/SKILL.md` parallelism bullets in "Batch
+  construction and ingestion" and "Do not do these things" reworded to
+  within-subagent scoping (sequential within a subagent; cross-subagent
+  parallelism allowed when scopes are disjoint).
+- `skills/references/INDEX.md` updated to list `session-hygiene.md`.
+
+### Preserved
+
+- `plugin.json` invariant: 8 skills + 1 command + 0 tools + 0 mcpServers.
+- Sibling version floors unchanged (`kb >= 0.6.0 / yt >= 0.5.0 /
+  x-api >= 0.4.0`).
+- `/etl-config` + `/etl-overview` entry-point contract unchanged.
+- Four-stage flow (Clarify → Fetch → Verify → Load) unchanged.
+- Memory-pointer ritual (`memory/kb_<slug>.md` + `MEMORY.md` + `kb_info`
+  verification) refined but not replaced.
+- 50-row cap on `kb_ingest_batch` unchanged.
+
+### Sibling-gated follow-on (tracked for v1.2.0, gated on agent-knowledgebase v0.7.0)
+
+- **FIELD-1** — consume sibling `openai_available` flag; remove interim
+  `import openai` probe.
+- **FIELD-2 (final)** — restore `kb_config_show scope=env` once sibling
+  echoes inherited env vars.
+- **FIELD-3 (final)** — remove plugin-side cleanup pass once sibling rolls
+  back failed source records automatically.
+- **FIELD-5** — update `skills/references/mcp-tool-contracts.md` and
+  `load-kb-from-sql` patterns once wiki index builder honors
+  `kb_source_label`.
+- **FIELD-6 (final)** — replace warmup script with `kb_warmup` tool call.
+- **FIELD-7** — pin `kb_ingest_batch` response schema (`embedding_complete`
+  / `chunks_embedded`).
+- **FIELD-11 (final)** — replace `check-embedder` scripts with
+  `kb_embedder_health` MCP tool.
+- **FIELD-12 (final)** — replace `build_staging_db_template.py` with
+  `kb_stage_from_sql` MCP tool.
+- **FIELD-14 (final)** — consume bounded timeout + progress events +
+  internal embedder preflight; remove interim silent-blocking warnings.
+- **Contract-probe-protocol** — add probe-5 for health/warmup/stage-from-sql
+  and probe-6 for retrieval timeout / progress-event shape.
+
 ## [1.0.0] — 2026-04-20 (ecosystem release)
 
 *Tag lands after sibling v0.6.0/v0.5.0/v0.4.0 tags resolve in marketplace.
@@ -109,5 +221,6 @@ through BUG-4 + CON-1 through CON-3 all closed. Tagged on commit
 `700d67e`. See `ROADMAP.md` § "Phase 8 — Dry-run walkthrough + publish"
 for the full exit-criterion evidence.
 
+[1.1.0]: https://example.invalid/data-etl-orchestrator/compare/v1.0.0...v1.1.0
 [1.0.0]: https://example.invalid/data-etl-orchestrator/compare/v0.2.0...v1.0.0
 [0.2.0]: https://example.invalid/data-etl-orchestrator/releases/tag/v0.2.0

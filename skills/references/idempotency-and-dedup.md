@@ -68,3 +68,27 @@ X article that failed server-side auto-crawl). The parent insert still
 succeeds; only the sub-item row is marked.
 
 See also: `deliverable-format.md` for the surrounding 6-section deliverable format.
+
+---
+
+## Failure-state semantics (FIELD-3 interim)
+
+When `kb_ingest_batch` errors during the embed phase, the source-row
+record is persisted with `status: "failed"` and `chunk_count: 0`.
+Under the default `skip` dedup policy, re-ingest sees the row as
+"already present" and the failed rows are silently dropped from the
+retry set — data loss.
+
+Until agent-knowledgebase v0.7.0 rolls back failed source-row
+persistence (or offers an explicit `persist_failed=true` opt-in),
+the caller-side contract is:
+
+- Treat `status: "failed"` source records as NOT ingested for dedup
+  purposes. The dedup check at Stage-3 kick-off filters them out.
+- After any partial-success batch, run the cleanup pass in
+  `../load-kb-from-sql/SKILL.md` § Cleanup pass before retrying.
+- Never accept a `skip`-policy re-run as evidence of idempotency
+  unless the failed-record cleanup has been performed.
+
+Once sibling rollback lands, this section is deleted and failed
+source records become transparent retry targets.

@@ -18,4 +18,5 @@ layer; the docs below are the source of truth.
 | [preflight-questionnaire.md](preflight-questionnaire.md) | Mandatory Stage-0 gate: 7 questions that must be resolved before any data tool is called. |
 | [release-gates.md](release-gates.md) | Read-only mirror of sibling plugin release status for agent-knowledgebase, youtube-mcp, and x-api-mcp. |
 | [source-db-schemas.md](source-db-schemas.md) | Ground-truth source-MCP cache schemas used by Stage-3 batch construction for table and dedup-key references. |
+| [session-hygiene.md](session-hygiene.md) | Pause protocol for `uv sync` mid-session (FIELD-4) and interrupt-recovery recipe for MCP server disconnects (FIELD-9). |
 | [subagent-dispatch-protocol.md](subagent-dispatch-protocol.md) | Contract between parent agent and dispatched Sonnet subagent for Stage-3 batch KB ingestion. |
